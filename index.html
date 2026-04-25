@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kas Saku v1.15</title>
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="default">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="theme-color" content="#1d4ed8">
+    <title>Kas Saku v1.15.17</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -109,33 +113,45 @@
 		}
 		
 		/* Animasi */
-        @keyframes scaleIn {
+        /*@keyframes scaleIn {
             from { transform: scale(0.9); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
-        .animate-scale-in { animation: scaleIn 0.2s ease-out; }
+        .animate-scale-in { animation: scaleIn 0.2s ease-out; }*/
 		
 		.cursor-pointer { cursor: pointer; }
 		.active\:scale-95:active { transform: scale(0.95); }
+
+
+		body {
+			/* Memberi jarak aman di bagian atas agar tidak mentok ke kamera/status bar */
+			padding-top: env(safe-area-inset-top);
+			padding-bottom: env(safe-area-inset-bottom);
+		}
 
     </style>
 </head>
 
 <body class="bg-gray-100 h-screen flex flex-col">
 
-	<header class="bg-white/80 backdrop-blur-md px-6 pt-8 pb-4 sticky top-0 z-40">
+	<header class="bg-white/500 backdrop-blur-md px-6 pt-8 pb-4 sticky top-0 z-40">
 		<div class="flex justify-between items-start">
 			<div>
 				<h1 class="text-2xl font-black tracking-tight text-blue-600">
 					KAS <span class="text-gray-800">SAKU</span>
+					<span class="text-[8px] font-bold text-gray-400 tracking-widest">Powered by Gemini</span>
 				</h1>
+				
+				<div id="realtime-clock" class="text-[12px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full border border-blue-700 font-bold">
+					Memuat waktu...
+				</div>
 			</div>
 
 			<div class="flex flex-col items-end gap-2">
-				<div class="flex items-center gap-2">
-					<span class="text-[8px] font-bold text-gray-400 tracking-widest">assisted by Gemini</span>
-					<span class="text-[12px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full border border-blue-100 font-bold">v1.15</span>
+				<div class="flex items-center gap-2">	
+					<span class="text-[12px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full border border-blue-100 font-bold">v1.15.17</span>
 				</div>
+				<div class="absolute -right-4 -bottom-4 opacity-10 text-7xl pointer-events-none ">📝</div>
 			</div>
 		</div>
 	</header>
@@ -149,7 +165,7 @@
 				<div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
 					<i class="fas fa-book-open text-2xl"></i>
 				</div>
-				<h2 class="text-lg font-black text-gray-800 leading-tight">Selamat Datang Di Aplikasi Kas Saku!</h2>
+				<h2 class="text-lg font-black text-gray-800 leading-tight">Selamat Datang Di Kas Saku!</h2>
 				<p class="text-[11px] text-gray-500 font-bold uppercase tracking-wider mt-1 mb-5">Siap mengelola kas hari ini?</p>
 				
 				<button onclick="pilihBuku(bukuAktif)" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-3">
@@ -173,13 +189,32 @@
 				</div>
 
 				<div id="panel-saldo" class="bg-white rounded-xl shadow-sm p-4 mb-4 border border-gray-100">
-					<div class="flex justify-between items-center mb-3">
-						<button onclick="bukaModalPeriode()" class="text-gray-600 font-bold">
-							<i class="far fa-calendar-alt mr-1"></i>
-							<span id="label-periode-header" class="text-[12px]">PILIH BUKU KAS</span>
+					<div class="flex justify-between items-center mb-4 gap-2">
+						<div class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl border-b-4 border-blue-800 shadow-lg shadow-blue-100 p-1">
+							<div class="relative flex items-center px-4 py-2">
+								<i class="far fa-calendar-alt text-white mr-3 text-sm"></i>
+								<div class="flex flex-col flex-1">
+									<span class="text-[8px] font-black text-blue-200 uppercase tracking-widest leading-none mb-1">Periode Laporan</span>
+									<span id="label-tanggal-pilih" class="text-white font-black text-[11px] uppercase truncate">PILIH TANGGAL</span>
+									
+									<input type="date" id="input-date-periode" 
+										onchange="updatePeriodeLengkap(this.value)" 
+										class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+								</div>
+								<i class="fas fa-chevron-down text-blue-200 text-[10px] ml-2"></i>
+							</div>
+						</div>
+
+						<button id="btn-tutup-buku" onclick="prosesTutupBuku()" class="hidden bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-300/50 active:scale-95 transition-all flex items-center border-b-4 border-red-800">
+							<span class="relative flex h-2.5 w-2.5 mr-2">
+								<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+								<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+							</span>
+							<span class="text-white drop-shadow-md">TUTUP BUKU</span>
+								<i class="fas fa-chevron-right ml-2 text-white text-[10px] opacity-70"></i>
 						</button>
-						<button id="btn-tutup-buku" onclick="prosesTutupBuku()" class="hidden bg-red-600 text-white px-3 py-2 rounded-lg text-[10px] font-bold">TUTUP BUKU</button>
 					</div>
+
 					<div class="grid grid-cols-2 gap-3 mb-3">
 						<div class="bg-green-50 p-2 rounded-lg">
 							<p class="text-[10px] text-green-700 font-bold uppercase">Pemasukan</p>
@@ -206,8 +241,14 @@
 					<h3 class="text-xs font-bold text-gray-700 uppercase">Riwayat Transaksi</h3>
 					<i class="fas fa-search text-gray-400 text-xs"></i>
 				</div>
+
 				<div id="list-transaksi" class="space-y-2">
+					<div class="bg-white p-8 rounded-xl border-2 border-dashed border-gray-200 text-center">
+						<img src="https://cdn-icons-png.flaticon.com/512/4076/4076432.png" class="w-12 h-12 mx-auto mb-2 opacity-30 grayscale">
+						<p class="text-xs text-gray-400">Belum ada transaksi di buku ini.</p>
 					</div>
+				</div>
+					
 			</div>
 		</div>
 		
@@ -232,7 +273,7 @@
 		
 			<div class="space-y-2">
 				<div class="flex justify-between items-center px-1">
-					<h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Grup Cek Selisih</h3>
+					<h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Data Cek Selisih</h3>
 				</div>
 				<div id="container-cek-selisih-grup" class="space-y-3">
 					</div>
@@ -240,7 +281,7 @@
 		
 			<div class="space-y-2">
 				<div class="flex justify-between items-center px-1">
-					<h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Grup Hutang / Pinjam</h3>
+					<h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Data Hutang / Pinjam</h3>
 				</div>
 				<div id="list-grup-hutang" class="bg-white rounded-2xl p-1 shadow-sm border border-gray-100 min-h-[50px]">
 					</div>
@@ -248,7 +289,7 @@
 
 			<div class="space-y-2">
 				<div class="flex justify-between items-center px-1">
-					<h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Grup Aset Bank</h3>
+					<h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Data Aset Bank</h3>
 				</div>
 				<div id="list-grup-bank" class="bg-white rounded-2xl p-1 shadow-sm border border-gray-100 min-h-[50px]">
 					</div>
@@ -256,7 +297,7 @@
 
 			<div class="space-y-2">
 				<div class="flex justify-between items-center px-1">
-					<h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Grup Aset Tunai</h3>
+					<h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Data Aset Tunai</h3>
 				</div>
 				<div id="list-grup-tunai" class="bg-white rounded-2xl p-1 shadow-sm border border-gray-100 min-h-[50px]">
 					</div>
@@ -303,7 +344,7 @@
 					</button>
 						<input type="file" id="input-file-import" class="hidden" accept=".json" onchange="imporDatabase(event)">	
 				
-					<button onclick="bukaModalHapusPilihan()" class="w-full mt-3 flex items-center justify-between p-3 bg-red-50 rounded-xl text-red-600 active:scale-95 transition-transform">
+					<button id="modal-kelola-db" onclick="bukaModalHapusPilihan()" class="w-full mt-3 flex items-center justify-between p-3 bg-red-50 rounded-xl text-red-600 active:scale-95 transition-transform">
 						<div class="flex items-center gap-3">
 							<i class="fas fa-database text-lg"></i>
 							<span class="text-sm font-bold">Kelola Database</span>
@@ -372,6 +413,44 @@
 	</nav>
 	
 	<script>
+		// FUNGSI JAM REAL-TIME
+		function updateClock() {
+			const sekarang = new Date();
+			
+			// Nama-nama hari dalam Indonesia
+			const daftarHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+			// Nama-nama bulan dalam Indonesia
+			const daftarBulan = [
+				"Januari", "Februari", "Maret", "April", "Mei", "Juni", 
+				"Juli", "Agustus", "September", "Oktober", "November", "Desember"
+			];
+
+			const hari = daftarHari[sekarang.getDay()];
+			const tanggal = sekarang.getDate();
+			const bulan = daftarBulan[sekarang.getMonth()];
+			const tahun = sekarang.getFullYear();
+			
+			// Format Jam, Menit, Detik agar selalu 2 digit (misal: 08:05:01)
+			const jam = String(sekarang.getHours()).padStart(2, '0');
+			const menit = String(sekarang.getMinutes()).padStart(2, '0');
+			const detik = String(sekarang.getSeconds()).padStart(2, '0');
+
+			const hasilPaten = `${hari}, ${tanggal} ${bulan} ${tahun} | ${jam}:${menit}:${detik}`;
+			
+			// Tampilkan ke elemen HTML
+			const elementClock = document.getElementById('realtime-clock');
+			if (elementClock) {
+				elementClock.innerText = hasilPaten;
+			}
+		}
+
+		// Jalankan fungsi setiap 1 detik (1000 milidetik)
+		setInterval(updateClock, 1000);
+
+		// Panggil sekali di awal agar tidak menunggu 1 detik baru muncul
+		updateClock();
+	
+	
 		// Variabel global untuk melacak tab aktif (default: buku)
 			let currentActiveTab = 'buku';
 	
@@ -390,11 +469,11 @@
 			let dbTransaksi = mainData.transaksi || [];
 			let dbJimpitan  = mainData.jimpitan || [];
 			let dbAnggota   = mainData.anggota || [];
-			let dbSaldoAwal = mainData.dbSaldoAwal || []; // Sekarang data Tutup Buku tidak akan hilang
-			let dbDompet    = mainData.dompet || {
-				hutang: [],
+			let dbSaldoAwal = [];
+			let dbDompet = JSON.parse(localStorage.getItem('kas_saku_dompet')) || {
+				tunai: [],
 				bank: [],
-				tunai: []
+				hutang: []
 			};
 
 		// 4. Variabel Pembantu (Helper) - Tetap diperlukan
@@ -418,11 +497,29 @@
 				if (kontenUtama) kontenUtama.classList.add('hidden');
 
 				// 3. Inisialisasi data lainnya (tetap jalan di background)
-				updateLabelHeader();        
-				// pilihBuku(bukuAktif); <-- BARIS INI KITA MATIKAN/HAPUS agar tidak muncul otomatis
-				
-				renderData();               
-				renderAnggotaSetelan();     
+					// 1. Buat fungsinya
+					function sinkronkanTombolPeriode() {
+						const tglDefault = new Date(); 
+						const y = tglDefault.getFullYear();
+						const m = String(tglDefault.getMonth() + 1).padStart(2, '0');
+						const d = String(tglDefault.getDate()).padStart(2, '0');
+						const tglFormatted = `${y}-${m}-${d}`;
+						
+						const inputElemen = document.getElementById('input-date-periode');
+						if (inputElemen) {
+							inputElemen.value = tglFormatted;
+							// PENTING: Panggil updatePeriodeLengkap agar variabel global terisi & renderData terpanggil
+							updatePeriodeLengkap(tglFormatted); 
+						}
+					}
+
+					// 2. LANGSUNG PANGGIL fungsinya agar jalan saat startup
+					sinkronkanTombolPeriode();
+
+					// 3. Inisialisasi data lainnya
+					updateLabelHeader(); 
+					renderData();               
+					renderAnggotaSetelan();    
 
 				// 4. Inisialisasi Laporan & Dompet (tetap jalan agar data siap saat tab dipindah)
 				inisialisasiTahunLaporan();
@@ -431,8 +528,8 @@
 				if(elemTahun) elemTahun.value = periodeAktif.tahun;
 
 				updateDashboardDompet();    
-				renderListHutang();         
-				renderListBank();           
+				renderListHutang();
+				renderListBank();
 				renderListTunai();          
 			});
 			
@@ -473,31 +570,33 @@
 					const bulanAktif = parseInt(periodeAktif.bulan);
 					const tahunAktif = parseInt(periodeAktif.tahun);
 
-					// 1. CEK DULU DI DATABASE SALDO AWAL (Hasil Tutup Buku)
-					const saldoAwalFix = dbSaldoAwal.find(s => 
-						s.buku === bukuAktif && 
-						parseInt(s.bulan) === bulanAktif && 
-						parseInt(s.tahun) === tahunAktif
-					);
+					// 1. Ambil Saldo Awal dari database permanen (dbSaldoAwal)
+					let saldoAwal = (dbSaldoAwal[bukuAktif] && dbSaldoAwal[bukuAktif][tahunAktif]) 
+									? dbSaldoAwal[bukuAktif][tahunAktif] 
+									: 0;
 
-					// Jika ditemukan hasil Tutup Buku, langsung gunakan angka itu
-					if (saldoAwalFix) return saldoAwalFix.nominal;
+					// 2. Tambah mutasi transaksi dari bulan-bulan SEBELUM bulan aktif
+					const mutasiLalu = dbTransaksi
+						.filter(t => t.buku === bukuAktif)
+						.filter(t => {
+							const d = new Date(t.tanggal);
+							const tglBulan = d.getMonth() + 1;
+							const tglTahun = d.getFullYear();
 
-					// 2. JIKA TIDAK ADA (Mode Otomatis), HITUNG DARI TRANSAKSI LALU
-					const transaksiLalu = dbTransaksi.filter(t => {
-						if (t.buku !== bukuAktif) return false;
-        
-						const d = new Date(t.tanggal);
-						const m = d.getMonth() + 1;
-						const y = d.getFullYear();
+							// Cek apakah transaksi terjadi di masa lalu (sebelum periode aktif)
+							const isMasaLalu = (tglTahun < tahunAktif) || (tglTahun === tahunAktif && tglBulan < bulanAktif);
+							
+							// KUNCI PERBAIKAN: Abaikan SEMUA transaksi yang mengandung kata "SALDO AWAL"
+							// Baik itu "SALDO AWAL TAHUN" maupun "SALDO AWAL BULAN"
+							const keterangan = t.keterangan.toUpperCase();
+							const isTransaksiSaldoAwal = keterangan.includes("SALDO") && keterangan.includes("AWAL");
+							
+							// Kita hanya menghitung mutasi dari transaksi asli (bukan saldo awal buatan sistem)
+							return isMasaLalu && !isTransaksiSaldoAwal;
+						})
+						.reduce((acc, curr) => curr.tipe === 'masuk' ? acc + curr.nominal : acc - curr.nominal, 0);
 
-						// Logika: Hitung semua transaksi sebelum bulan/tahun aktif
-						return y < tahunAktif || (y === tahunAktif && m < bulanAktif);
-					});
-
-					return transaksiLalu.reduce((acc, curr) => {
-						return curr.tipe === 'masuk' ? acc + curr.nominal : acc - curr.nominal;
-					}, 0);
+					return saldoAwal + mutasiLalu;
 				}
 			
 			// 4. Untuk Fungsi Template			
@@ -509,83 +608,63 @@
 						}
 				}
 				
-				function pakaiTemplate(jenis) {
+				// untuk keterangan mushola
+				function setTemplateMushola(jenis) {
 					const inputKeterangan = document.getElementById('input-keterangan');
-					if (!inputKeterangan) return;
+					const inputNominal = document.getElementById('input-nominal');
+					if (!inputKeterangan || !inputNominal) return;
 
-					const tahunLalu = (periodeAktif && periodeAktif.tahun) ? periodeAktif.tahun - 1 : new Date().getFullYear() - 1;
+					const tahunAktif = periodeAktif.tahun;
 
 					switch (jenis) {
-						case 'saldo':
-							inputKeterangan.value = `SALDO AKHIR TAHUN ${tahunLalu}`;
+						case 'SALDO':
+							// Tetap ada untuk input manual jika diperlukan
+							inputKeterangan.value = `SALDO AWAL TAHUN ${tahunAktif}`;
+							inputNominal.focus();
 							break;
-						case 'warga':
+						case 'WARGA':
 							inputKeterangan.value = `AMAL SODAKOH WARGA RT 04`;
+							inputNominal.focus();
 							break;
-						case 'amal':
-							inputKeterangan.value = `AMAL SODAKOH `;
-							// Langsung fokus dan arahkan kursor ke paling akhir
-							inputKeterangan.focus();
-							const val = inputKeterangan.value;
-							inputKeterangan.value = '';
-							inputKeterangan.value = val;
+						case 'AMAL':
+							inputKeterangan.value = `AMAL SODAKOH `; // User tinggal tambah nama
+							break;
+						case 'BELI':
+							inputKeterangan.value = `BELI `; // User tinggal tambah barang
+							break;
+						case 'KEGIATAN':
+							inputKeterangan.value = `KEGIATAN `; // User tinggal tambah nama acara
 							break;
 					}
+
+					// Efek Otomatis: Fokuskan kursor ke akhir teks agar bisa langsung lanjut ketik
+					// Reset posisi kursor ke paling belakang
+					const val = inputKeterangan.value;
+					inputKeterangan.value = '';
+					inputKeterangan.value = val;
 				}
 				
+				
+				// untuk keterangan lingkungan
 				function setTemplateLingkungan(tipe) {
 					const inputKet = document.getElementById('input-keterangan');
 					const inputNom = document.getElementById('input-nominal');
-					const inputTipe = document.getElementById('input-tipe');
 					
-					// Gunakan standar index 0 = Januari agar lebih konsisten dengan Date()
+					// Ambil nama bulan aktif untuk label otomatis
 					const namaBulan = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
-
-					const bulanAktif = parseInt(periodeAktif.bulan); // Misal: 4 (April)
+					const bulanAktif = parseInt(periodeAktif.bulan); 
 					const tahunAktif = parseInt(periodeAktif.tahun);
+					const labelPeriodeSekarang = `${namaBulan[bulanAktif - 1]} ${tahunAktif}`;
 
-					if (tipe === 'SALDO') {
-						// 1. Tentukan Label Bulan Lalu
-						let blnLaluIdx = bulanAktif - 2; // -1 untuk index, -1 lagi untuk bulan lalu
-						let thnLalu = tahunAktif;
-
-						if (blnLaluIdx < 0) {
-							blnLaluIdx = 11; // Balik ke Desember
-							thnLalu = tahunAktif - 1;
-						}
-						const labelPeriodeLalu = `${namaBulan[blnLaluIdx]} ${thnLalu}`;
-
-						// 2. Hitung Saldo Akhir Sebelum Periode Aktif
-						const dataBuku = dbTransaksi.filter(t => t.buku === bukuAktif);
-						const saldoAkhirLalu = dataBuku.filter(t => {
-							const d = new Date(t.tanggal);
-							const tThn = d.getFullYear();
-							const tBln = d.getMonth() + 1; // Konversi ke 1-12
-							
-							// Ambil semua transaksi yang tahunnya lebih kecil, 
-							// ATAU tahunnya sama tapi bulannya lebih kecil dari bulan aktif
-							return (tThn < tahunAktif) || (tThn === tahunAktif && tBln < bulanAktif);
-						}).reduce((acc, curr) => {
-							const nom = Number(curr.nominal) || 0;
-							return curr.tipe === 'masuk' ? acc + nom : acc - nom;
-						}, 0);
-
-						inputKet.value = `SALDO AKHIR ${labelPeriodeLalu}`;
-						inputNom.value = formatRupiah(saldoAkhirLalu);
-						inputTipe.value = 'masuk';
-						
-					} else if (tipe === 'BELI' || tipe === 'KEGIATAN') {
+					if (tipe === 'BELI' || tipe === 'KEGIATAN') {
 						inputKet.value = tipe + " ";
-						inputTipe.value = 'keluar';
+						// setTipe('keluar'); // Pastikan tipe terpilih adalah keluar
 						inputKet.focus();
 						
 					} else if (tipe === 'PAM') {
-						// Label untuk bulan yang sedang berjalan
-						const labelPeriodeSekarang = `${namaBulan[bulanAktif - 1]} ${tahunAktif}`;
-						
-						inputKet.value = `BAYAR PAM ${labelPeriodeSekarang}`;
-						inputTipe.value = 'keluar';
-						inputNom.focus();
+						inputKet.value = `PEMBAYARAN PAM ${labelPeriodeSekarang}`;
+						// setTipe('keluar');
+						inputNom.focus(); // Langsung fokus ke nominal karena keterangan sudah lengkap
 					}
 				}	
 	
@@ -606,34 +685,38 @@
 				function updateLabelHeader() {
 					const namaBulan = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", 
 										"JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
-    
-					// 1. Ambil elemen label di header
+					
 					const el = document.getElementById('label-periode-header');
-						if (!el) return;
+					if (!el) return;
 
-					// 2. GANTI TULISAN HEADER
-					if (bukuAktif === 'mushola') {
-						// Kas Mushola biasanya tampil per tahun
-						el.innerText = `KAS ${periodeAktif.tahun}`;
-					} else if (bukuAktif === 'ziarah') {
-						el.innerText = `TAB ${namaBulan[periodeAktif.bulan - 1]} ${periodeAktif.tahun}`;
-					} else {
-						// Kas Lingkungan tampil per bulan
-						el.innerText = `KAS ${namaBulan[periodeAktif.bulan - 1]} ${periodeAktif.tahun}`;
-					}
+					// 1. Update Label Header (Bulan & Tahun)
+					el.innerText = `${namaBulan[periodeAktif.bulan - 1]} ${periodeAktif.tahun}`;
 
-					// 3. LOGIKA TOMBOL TUTUP BUKU (Hanya muncul di Desember & bukan Ziarah)
+					// 2. LOGIKA TOMBOL TUTUP BUKU (v1.15.19 - Deteksi Akhir Bulan Otomatis)
 					const btnTutup = document.getElementById('btn-tutup-buku');
-						if (btnTutup) {
-							const isDesember = parseInt(periodeAktif.bulan) === 12;
-							const bukanZiarah = bukuAktif !== 'ziarah';
+					if (btnTutup) {
+						// Kita ambil tanggal yang sedang dipilih dari input date
+						const inputDate = document.getElementById('input-date-periode');
+						if (inputDate && inputDate.value) {
+							const d = new Date(inputDate.value);
+							
+							// Trik deteksi akhir bulan: 
+							// Kita cek apakah besoknya sudah ganti bulan (tanggal 1)
+							const besok = new Date(d);
+							besok.setDate(d.getDate() + 1);
+							
+							const isAkhirBulan = besok.getDate() === 1;
 
-							if (isDesember && bukanZiarah) {
+							if (isAkhirBulan) {
 								btnTutup.classList.remove('hidden');
 							} else {
 								btnTutup.classList.add('hidden');
 							}
+						} else {
+							// Jika input date kosong, sembunyikan saja
+							btnTutup.classList.add('hidden');
 						}
+					}
 				}
 				
 				
@@ -685,6 +768,7 @@
 				for (let content of contents) {
 					content.classList.remove("active");
 					content.style.display = "none"; // Pastikan benar-benar hilang
+					content.classList.remove("active", "animate-scale-in"); // Bersihkan class lama
 				}
 
 				// Reset semua tombol navigasi
@@ -696,19 +780,25 @@
 
 				// Tampilkan tab yang dipilih
 				const target = document.getElementById(tabName);
-				if (target) {
-					target.classList.add("active");
-					target.style.display = "block";
-					
-					// Tandai tombol sebagai aktif
-					evt.currentTarget.classList.add("active-tab", "text-blue-600");
-					evt.currentTarget.classList.remove("text-gray-400");
-				}
+					if (target) {
+						target.style.display = "block";
+						
+						// Gunakan requestAnimationFrame agar animasi selalu segar saat diklik
+						requestAnimationFrame(() => {
+							target.classList.add("active", "animate-scale-in");
+						});
+
+						if (evt && evt.currentTarget) {
+							evt.currentTarget.classList.add("active-tab", "text-blue-600");
+							evt.currentTarget.classList.remove("text-gray-400");
+						}
+					}
 
 				// Jalankan refresh data otomatis (pastikan fungsi ini ada di kode Bapak)
 				if (tabName === 'laporan' && typeof renderLaporan === "function") renderLaporan();
 				if (tabName === 'dompet' && typeof updateDashboardDompet === "function") updateDashboardDompet();
 				if (tabName === 'buku' && typeof renderData === "function") renderData();
+				if (tabName === 'setelan' && typeof renderAnggotaSetelan === "function") renderAnggotaSetelan();
 
 				if (navigator.vibrate) navigator.vibrate(5);
 			}
@@ -727,10 +817,6 @@
 				} 
 				else if (currentActiveTab === 'dompet') {
 					bukaMenuDompet(); // Munculkan pilihan: Hutang, Bank, Tunai
-				} 
-				else if (currentActiveTab === 'laporan') {
-					if (typeof kirimWA === "function") kirimWA();
-					else alert("Fungsi Kirim WA belum terpasang");
 				} 
 				else if (currentActiveTab === 'pengaturan') {
 					bukaModalAnggota();
@@ -771,9 +857,14 @@
 					jimpitan: dbJimpitan,
 					anggota: dbAnggota,
 					dompet: dbDompet,
-					dbSaldoAwal: dbSaldoAwal // Ini kunci agar Tutup Buku tidak hilang
+					dbSaldoAwal: dbSaldoAwal
 				};
-					localStorage.setItem('kas_saku_data', JSON.stringify(mainData));
+				// Simpan ke storage
+				localStorage.setItem('kas_saku_data', JSON.stringify(mainData));
+				
+				// PENTING: Jangan buat variabel baru di sini, 
+				// agar renderData tetap membaca variabel global yang sama.
+				console.log("Data tersimpan & Sinkron");
 			}
 
 
@@ -808,15 +899,7 @@
 					selectorTahun.value = periodeAktif.tahun;
 				}
 
-				// 3. Logika Khusus Mushola (Laporan Tahunan)
-				if (bukuAktif === 'mushola') {
-					if (selectorBulan) selectorBulan.classList.add('hidden');
-					// Catatan: Mushola biasanya berbasis tahunan, bulan bisa diset default 12
-					} else {
-						if (selectorBulan) selectorBulan.classList.remove('hidden');
-					}
-
-				// 4. Tampilkan modal
+				// 3. Tampilkan modal
 				const modal = document.getElementById('modal-periode');
 					if (modal) modal.classList.remove('hidden');
 			}
@@ -826,6 +909,16 @@
 					if (modal) {
 						modal.classList.add('hidden');
 					}
+
+				// Jalankan animasi keluar
+				content.classList.remove('animate-scale-in', 'animate-slide-up');
+				content.classList.add('animate-scale-out');
+
+				// Tunggu animasi selesai (0.2 detik sesuai CSS Bapak) baru sembunyikan
+				setTimeout(() => {
+					modal.classList.add('hidden');
+					content.classList.remove('animate-scale-out');
+				}, 180);	
 			}
 	
 			function simpanPeriode() {
@@ -855,21 +948,61 @@
 			}
 
 
+			function updatePeriodeLengkap(val) {
+				if (!val) return;
+				
+				const d = new Date(val);
+				const namaBulan = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", 
+									"JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+				
+				const tgl = d.getDate();
+				const bln = d.getMonth() + 1;
+				const thn = d.getFullYear();
+
+				// 1. Update Teks di Tombol Biru
+				const teksTanggal = `${tgl} ${namaBulan[bln-1]} ${thn}`;
+				document.getElementById('label-tanggal-pilih').innerText = teksTanggal;
+
+				// 2. Update Variabel Global (Agar rumus lain tetap jalan)
+				periodeAktif.bulan = bln;
+				periodeAktif.tahun = thn;
+				// periodeAktif.tanggalLengkap = val; // Opsional jika butuh tanggal spesifik
+
+				// 3. Simpan & Refresh Data
+				saveAllData();
+				renderData();
+				if (typeof renderLaporan === "function") renderLaporan();
+
+				// 4. Cek Tombol Tutup Buku (Muncul jika tanggal terakhir di bulan itu)
+				const besok = new Date(d);
+				besok.setDate(d.getDate() + 1);
+				const btnTutup = document.getElementById('btn-tutup-buku');
+				
+				if (btnTutup) {
+					if (besok.getDate() === 1) {
+						btnTutup.classList.remove('hidden');
+					} else {
+						btnTutup.classList.add('hidden');
+					}
+				}
+			}
+
+
 
 		// --- FUNGSI PROSES SIMPAN TRANSAKSI ---
 			function simpanTransaksi() {
 				const nominalRaw = document.getElementById('input-nominal').value.replace(/\./g, "");
 				const tanggal = document.getElementById('input-tanggal').value;
-    
-				let keterangan;
-					if (bukuAktif === 'ziarah') {
-						keterangan = document.getElementById('select-anggota').value;
-					} else {
-						keterangan = document.getElementById('input-keterangan').value;
-					}
 
-					if (!keterangan || keterangan === "") return alert("Nama atau Keterangan tidak boleh kosong!");
-					if (!nominalRaw || nominalRaw == "0") return alert("Nominal tidak boleh kosong!");
+				let keterangan;
+				if (bukuAktif === 'ziarah') {
+					keterangan = document.getElementById('select-anggota').value;
+				} else {
+					keterangan = document.getElementById('input-keterangan').value;
+				}
+
+				if (!keterangan || keterangan === "") return alert("Nama atau Keterangan tidak boleh kosong!");
+				if (!nominalRaw || nominalRaw == "0") return alert("Nominal tidak boleh kosong!");
 
 				const payload = {
 					tanggal: tanggal,
@@ -879,32 +1012,50 @@
 					buku: bukuAktif
 				};
 
-					if (idSedangDiedit !== null) {
+				// --- LOGIKA SIMPAN (Hanya satu tempat agar tidak error) ---
+				if (idSedangDiedit !== null) {
 					// Mode Edit
 					const index = dbTransaksi.findIndex(t => t.id === idSedangDiedit);
-						if (index !== -1) {
-							dbTransaksi[index] = { ...dbTransaksi[index], ...payload };
-						}
-							idSedangDiedit = null;
-						} else {
+					if (index !== -1) {
+						dbTransaksi[index] = { ...dbTransaksi[index], ...payload };
+					}
+					idSedangDiedit = null; // Reset status edit
+				} else {
 					// Mode Baru
-						dbTransaksi.push({ id: Date.now(), ...payload });
-						}
+					dbTransaksi.push({ id: Date.now(), ...payload });
+				}
 
-				// SIMPAN SEMUA DATA
+				// 1. Simpan ke LocalStorage
 				saveAllData(); 
 
-				// Reset Form & Tampilan
+				// 2. Paksa update periodeAktif agar sinkron dengan input tanggal yang dipilih
+				const tglInput = document.getElementById('input-tanggal').value; // Misal "2026-03-10"
+				const d = new Date(tglInput);
+
+				// Paksa variabel global periodeAktif berubah ke bulan transaksi tersebut
+				periodeAktif.bulan = d.getMonth() + 1;
+				periodeAktif.tahun = d.getFullYear();
+
+				// Update juga tampilan input tanggal periode utama agar user tidak bingung
+				const inputPeriode = document.getElementById('input-date-periode');
+				if(inputPeriode) inputPeriode.value = tglInput;
+
+				// Baru panggil render
+				updatePeriodeLengkap(tglInput); // Ini fungsi yang Bapak buat tadi, panggil ini saja!
+
+				// 3. Reset Form
 				document.getElementById('input-keterangan').value = "";
 				document.getElementById('input-nominal').value = "";
-    
+				
 				const btnSimpan = document.querySelector("button[onclick='simpanTransaksi()']");
-					if (btnSimpan) btnSimpan.innerText = "SIMPAN DATA";
+				if (btnSimpan) btnSimpan.innerText = "SIMPAN DATA";
 
-					alert("Data berhasil disimpan!");
-					tutupModal();
-					renderData();
-					updateDashboardDompet(); // Pastikan saldo dompet ikut update kalau ada transaksi
+				// 4. Tutup Modal & Refresh Tampilan (Tanpa Alert di tengah agar tidak nyangkut)
+				tutupModal();
+				renderData();
+				updateDashboardDompet();
+
+				console.log("Data Berhasil Direfresh Otomatis!");
 			}
 	
 	
@@ -919,20 +1070,31 @@
 				const dataBuku = dbTransaksi.filter(t => t.buku === bukuAktif);
 
 				// --- 1. AMBIL SALDO AWAL DARI DATABASE (HASIL TUTUP BUKU) ---
-				// Mencari saldo awal yang cocok dengan buku, bulan, dan tahun saat ini
-				const saldoAwalOtomatis = hitungSaldoLalu(); // << BARU: Lebih aman
+				// Gunakan parseFloat dan pastikan ada nilai fallback 0
+    			const saldoAwalOtomatis = parseFloat(hitungSaldoLalu()) || 0;
 
-				// --- 2. FILTER TRANSAKSI BULAN INI SAJA ---
+				// --- 2. FILTER TRANSAKSI BULAN INI SAJA (Update v1.15.21) ---
 				const dataBulanIni = dataBuku.filter(t => {
 					const d = new Date(t.tanggal);
-					return (d.getMonth() + 1) === bulanAktif && d.getFullYear() === tahunAktif;
+					// Paksa ke Number untuk perbandingan yang akurat
+					return (d.getMonth() + 1) === parseInt(periodeAktif.bulan) && 
+						d.getFullYear() === parseInt(periodeAktif.tahun);
 				});
 
 				// --- 3. HITUNG STATISTIK ---
-				// Pemasukan Murni
+				// Pemasukan Murni (Abaikan Saldo Awal Januari dari Riwayat)
 				let pemasukanBulanIni = dataBulanIni
-					.filter(t => t.tipe === 'masuk')
-					.reduce((acc, curr) => acc + curr.nominal, 0);
+					.filter(t => {
+						const isMasuk = t.tipe === 'masuk';
+						// KUNCI: Cek apakah mengandung kata SALDO AWAL (tanpa peduli bulannya)
+						const isSaldoAwalManual = t.keterangan.toUpperCase().includes("SALDO") && 
+												t.keterangan.toUpperCase().includes("AWAL");
+
+						// Jika dia adalah transaksi saldo awal, keluarkan dari hitungan pemasukan murni
+						// karena nominalnya sudah diwakili oleh variabel 'saldoAwalOtomatis'
+						return isMasuk && !isSaldoAwalManual;
+					})
+					.reduce((acc, curr) => acc + (Number(curr.nominal) || 0), 0);
 
 				// Pengeluaran Murni
 				let pengeluaranBulanIni = dataBulanIni
@@ -973,84 +1135,116 @@
 								<div class="text-right flex items-center gap-3"><div><p class="text-[10px] text-gray-400 font-bold">SALDO</p><p class="text-sm font-bold text-blue-600">Rp ${formatRupiah(rekap[nama])}</p></div><i class="fas fa-chevron-right text-[10px] text-gray-300"></i></div>
 								</div>`).join('');
 				} else {
-				// Tampilan Umum (Lingkungan & Mushola)
+					// Tampilan Umum (Lingkungan & Mushola)
 					let html = dataBulanIni.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal)).map(t => {
-						const klikAction = t.keterangan.includes("JIMPITAN") 
-							? `bukaModalJimpitanKhususEdit(${JSON.stringify(t).replace(/"/g, '&quot;')})` 
+						// --- TAMBAHKAN LOGIKA PENANDA DISINI ---
+						const d = new Date(t.tanggal);
+						// KUNCI: Jangan kunci di 'isJanuari', tapi cek isi keterangannya
+						const isArsipSaldo = t.keterangan.toUpperCase().includes("SALDO") && 
+											t.keterangan.toUpperCase().includes("AWAL");
+
+						const klikAction = t.keterangan.toUpperCase().includes("JIMPITAN") 
+							? `editTransaksi(${t.id})` 
 							: `bukaModalEdit(${t.id})`;
-				
-						const borderSide = t.tipe === 'masuk' ? 'border-green-500' : 'border-red-500';
+
+						// Jika arsip, border abu-abu, jika tidak pakai warna asli
+						const borderSide = isArsipSaldo ? 'border-gray-300' : (t.tipe === 'masuk' ? 'border-green-500' : 'border-red-500');
 
 						return `
-							<div onclick="${klikAction}" class="bg-white p-3 rounded-lg shadow-sm border-l-4 ${borderSide} flex justify-between items-center mb-2 active:scale-95 transition-all">
-								<div><p class="text-[10px] text-gray-400 font-bold">${t.tanggal}</p><p class="text-xs font-bold text-gray-700 uppercase">${t.keterangan}</p></div>
-								<p class="text-sm font-bold ${t.tipe === 'masuk' ? 'text-green-600' : 'text-red-600'}">
+							<div onclick="${klikAction}" class="bg-white p-3 rounded-lg shadow-sm border-l-4 ${borderSide} flex justify-between items-center mb-2 active:scale-95 transition-all cursor-pointer ${isArsipSaldo ? 'opacity-60' : ''}">
+								<div>
+									<div class="flex items-center gap-1">
+										<p class="text-[10px] text-gray-400 font-bold">${t.tanggal}</p>
+										${isArsipSaldo ? '<span class="text-[8px] bg-gray-200 text-gray-500 px-1 rounded font-black italic">ARSIP</span>' : ''}
+									</div>
+									<p class="text-xs font-bold text-gray-700 uppercase ${isArsipSaldo ? 'text-gray-400' : ''}">${t.keterangan}</p>
+								</div>
+								<p class="text-sm font-bold ${isArsipSaldo ? 'text-gray-400 line-through' : (t.tipe === 'masuk' ? 'text-green-600' : 'text-red-600')}">
 									${t.tipe === 'masuk' ? '+' : '-'} ${formatRupiah(t.nominal)}
 								</p>
 							</div>`;
-						}).join('');
+					}).join('');
 
-					listContainer.innerHTML = html || '<p class="text-center text-xs text-gray-400 p-8">Belum ada transaksi.</p>';
+					listContainer.innerHTML = html || `
+							<div class="bg-white p-8 rounded-xl border-2 border-dashed border-gray-200 text-center">
+								<img src="https://cdn-icons-png.flaticon.com/512/4076/4076432.png" class="w-12 h-12 mx-auto mb-2 opacity-30 grayscale">
+								<p class="text-xs text-gray-400">Belum ada transaksi di buku ini.</p>
+							</div>
+						`;
 				}
 			}
 	
 		
-		// --- FUNGSI PROSES TUTUP BUKU ---
+		// --- FUNGSI PROSES TUTUP BUKU (v1.15.17 - Full Anti-Double Bulanan & Tahunan) ---
 			function prosesTutupBuku() {
 				const tahunSekarang = parseInt(periodeAktif.tahun);
-				const tahunBaru = tahunSekarang + 1;
-    
-				// 1. Pastikan hanya bisa Tutup Buku jika sedang di posisi bulan Desember
-				if (parseInt(periodeAktif.bulan) !== 12) {
-					return alert("Tutup Buku hanya bisa dilakukan saat periode berada di bulan Desember.");
+				const bulanSekarang = parseInt(periodeAktif.bulan);
+				
+				// 1. Tentukan Target & Label
+				let targetBulan = bulanSekarang + 1;
+				let targetTahun = tahunSekarang;
+				let statusArsip = "BULAN"; 
+
+				if (targetBulan > 12) {
+					targetBulan = 1;
+					targetTahun++;
+					statusArsip = "TAHUN"; 
 				}
 
-				if (!confirm(`Tutup Buku Tahun ${tahunSekarang}?\nSaldo akhir Desember akan dipindah ke Januari ${tahunBaru} sebagai SALDO AWAL.`)) return;
+				const pesanKonfirmasi = `Tutup Buku Periode ${bulanSekarang}/${tahunSekarang}?\n\nSaldo akhir akan dipindah sebagai SALDO AWAL periode ${targetBulan}/${targetTahun}.`;
+				if (!confirm(pesanKonfirmasi)) return;
 
-				// 2. Hitung Saldo Awal Desember (ambil dari database saldo awal)
-				const dataSADes = dbSaldoAwal.find(s => 
-					s.buku === bukuAktif && 
-					parseInt(s.bulan) === 12 && 
-					parseInt(s.tahun) === tahunSekarang
-				);
-				const saDes = dataSADes ? (Number(dataSADes.nominal) || 0) : 0;
-    
-				// 3. Hitung Mutasi Transaksi selama bulan Desember
-				const mutasiDes = dbTransaksi.reduce((acc, t) => {
-				const d = new Date(t.tanggal);
-					if (t.buku === bukuAktif && (d.getMonth() + 1) === 12 && d.getFullYear() === tahunSekarang) {
-						return acc + (t.tipe === 'masuk' ? t.nominal : -t.nominal);
-					}
-						return acc;
-				}, 0);
-    
-				const saldoAkhirTahunIni = saDes + mutasiDes;
+				// 2. HITUNG SALDO AKHIR BULAN INI (DILAKUKAN SEBELUM MEMBERSIHKAN TARGET)
+				// Kita hitung dulu saldo yang ada saat ini
+				const saldoLalu = parseFloat(hitungSaldoLalu()) || 0; 
+				const mutasiBulanIni = dbTransaksi.filter(t => {
+					const d = new Date(t.tanggal);
+					const ket = t.keterangan.toUpperCase();
+					const isBukanArsip = !(ket.includes("SALDO") && ket.includes("AWAL"));
+					
+					return t.buku === bukuAktif && 
+						(d.getMonth() + 1) === bulanSekarang && 
+						d.getFullYear() === tahunSekarang &&
+						isBukanArsip; // Hanya hitung transaksi murni
+				}).reduce((acc, t) => acc + (t.tipe === 'masuk' ? parseFloat(t.nominal) : -parseFloat(t.nominal)), 0);
+				
+				const saldoAkhirFix = saldoLalu + mutasiBulanIni;
 
-				// 4. Update Database Saldo Awal untuk Januari Tahun Baru
-				// Hapus dulu data Januari tahun baru jika sudah ada (agar tidak dobel)
-					dbSaldoAwal = dbSaldoAwal.filter(s => 
-						!(s.buku === bukuAktif && parseInt(s.bulan) === 1 && parseInt(s.tahun) === tahunBaru)
-					);
+				// 3. PEMBERSIHAN DATA LAMA DI TARGET (Agar tidak double saat ditimpa)
+				dbTransaksi = dbTransaksi.filter(t => {
+					const tgl = new Date(t.tanggal);
+					const bln = tgl.getMonth() + 1;
+					const thn = tgl.getFullYear();
+					const teks = t.keterangan.toUpperCase();
+					const isSaldoAwal = teks.includes("SALDO") && teks.includes("AWAL");
+					const isTarget = (bln === targetBulan && thn === targetTahun);
+					return !(t.buku === bukuAktif && isSaldoAwal && isTarget);
+				});
 
-				// Tambahkan saldo awal baru
-					dbSaldoAwal.push({ 
-						buku: bukuAktif, 
-						bulan: 1, 
-						tahun: tahunBaru, 
-						nominal: saldoAkhirTahunIni 
-					});
+				// 4. INPUT SALDO AWAL BARU KE TARGET
+				dbTransaksi.push({
+					id: Date.now(),
+					buku: bukuAktif,
+					tanggal: `${targetTahun}-${String(targetBulan).padStart(2, '0')}-01`,
+					keterangan: `SALDO AWAL ${statusArsip}`,
+					nominal: saldoAkhirFix,
+					tipe: "masuk"
+				});
 
-				// 5. Simpan menggunakan fungsi Satu Laci yang baru
+				// 5. SIMPAN DAN PINDAH PERIODE
 				saveAllData(); 
-    
-				alert(`Tutup Buku Berhasil!\nSaldo Awal Januari ${tahunBaru} adalah Rp ${formatRupiah(saldoAkhirTahunIni)}`);
-    
-				// Pindah periode ke Januari tahun baru agar user langsung melihat hasilnya
-				periodeAktif.bulan = 1;
-				periodeAktif.tahun = tahunBaru;
-    
+				
+				// Pindah ke periode baru agar user lihat hasilnya
+				periodeAktif.bulan = targetBulan;
+				periodeAktif.tahun = targetTahun;
+				
+				const dateInput = document.getElementById('input-date-periode');
+				if (dateInput) {
+					dateInput.value = `${targetTahun}-${String(targetBulan).padStart(2, '0')}-01`;
+				}
+
 				renderData();
-				updateLabelHeader();
+				alert(`Berhasil!\nSaldo Rp ${formatRupiah(saldoAkhirFix)} telah diarsipkan.`);
 			}
 	
 	
@@ -1067,6 +1261,11 @@
 				if (kontenUtama) {
 					kontenUtama.classList.remove('hidden');
 					kontenUtama.classList.add('animate-scale-in'); // Tambah animasi biar halus
+
+					// Gunakan requestAnimationFrame agar animasi selalu segar saat diklik
+						requestAnimationFrame(() => {
+							kontenUtama.classList.add("active", "animate-scale-in");
+						});
 				}
 
 				// 2. LOGIKA VISUAL TOMBOL (TAB KAS)
@@ -1100,78 +1299,83 @@
 		// --- FUNGSI BUKA MODAL ---	
 			function bukaModal() { 
 				// 1. Reset State & Form
-				idSedangDiedit = null; // << BARU: Pastikan kembali ke mode "Tambah Baru"
+				idSedangDiedit = null; 
 				document.getElementById('input-keterangan').value = "";    
 				document.getElementById('input-nominal').value = "";
 				setTipe('masuk');
 
-				// 2. LOGIKA TANGGAL CERDAS (Sesuai Periode)
+				// 2. LOGIKA TANGGAL CERDAS
 				const skrg = new Date();
 				const thnSkrg = skrg.getFullYear();
 				const blnSkrg = skrg.getMonth() + 1;
 				const tglSkrg = String(skrg.getDate()).padStart(2, '0');
 
 				let tanggalSet;
-				// Jika periode aktif sama dengan bulan ini, pakai tanggal hari ini.
-				// Jika tidak, pakai tanggal 1 di bulan periode tersebut.
 				if (parseInt(periodeAktif.tahun) === thnSkrg && parseInt(periodeAktif.bulan) === blnSkrg) {
 					tanggalSet = `${thnSkrg}-${String(blnSkrg).padStart(2, '0')}-${tglSkrg}`;
 				} else {
 					tanggalSet = `${periodeAktif.tahun}-${String(periodeAktif.bulan).padStart(2, '0')}-01`;
 				}
-					document.getElementById('input-tanggal').value = tanggalSet;
+				document.getElementById('input-tanggal').value = tanggalSet;
 
-				// 3. DEFINISI AREA (Disederhanakan)
+				// 3. DEFINISI AREA
 				const ui = {
 					ziarah: document.getElementById('area-ziarah'),
-						shortcut: document.getElementById('area-shortcut-ziarah'),
+					shortcut: document.getElementById('area-shortcut-ziarah'),
 					umum: document.getElementById('area-keterangan-umum'),
 					mushola: document.getElementById('template-mushola-area'),
 					lingkungan: document.getElementById('template-lingkungan-area'),
 					jimpitan: document.getElementById('area-jimpitan'),
-					waBtn: document.getElementById('btn-wa-ziarah'),
-					title: document.getElementById('modal-title'),
-					btnM: document.getElementById('btn-tipe-masuk'),
-					btnK: document.getElementById('btn-tipe-keluar')
+					waBtn: document.getElementById('btn-wa-ziarah')
+					// PERHATIKAN: btnM, btnK, dan title dihapus dari daftar sembunyi otomatis
 				};
 
-				// 4. RESET TAMPILAN (Sembunyikan semua fitur khusus dulu)
-				Object.values(ui).forEach(el => { if(el && el.classList) el.classList.add('hidden') });
-					if(ui.umum) ui.umum.classList.remove('hidden');
+				const btnM = document.getElementById('btn-tipe-masuk');
+				const btnK = document.getElementById('btn-tipe-keluar');
+				const title = document.getElementById('modal-title');
+
+				// 4. RESET TAMPILAN (Hanya menyembunyikan area konten, bukan tombol utama)
+				Object.values(ui).forEach(el => { if(el) el.classList.add('hidden') });
+				
+				// Pastikan tombol tipe transaksi SELALU muncul
+				if(btnM) btnM.classList.remove('hidden');
+				if(btnK) btnK.classList.remove('hidden');
+				if(ui.umum) ui.umum.classList.remove('hidden');
 
 				// 5. ATUR TAMPILAN PER BUKU
+
 				if (bukuAktif === 'ziarah') {
-					ui.title.innerText = "TABUNGAN ZIARAH";
-					ui.btnM.innerText = "TABUNG";
-					ui.btnK.innerText = "AMBIL";
-        
+					title.innerText = "TABUNGAN ZIARAH";
+					btnM.innerText = "TABUNG";
+					btnK.innerText = "AMBIL";
+
 				if(ui.ziarah) ui.ziarah.classList.remove('hidden');
 				if(ui.shortcut) ui.shortcut.classList.remove('hidden');
 				if(ui.umum) ui.umum.classList.add('hidden');
-				if(ui.waBtn) ui.waBtn.classList.remove('hidden');
 
-				// Isi Dropdown Anggota
 				const selectAnggota = document.getElementById('select-anggota');
 					if (selectAnggota) {
-							selectAnggota.innerHTML = dbAnggota.length > 0 
+						selectAnggota.innerHTML = dbAnggota.length > 0 
 							? dbAnggota.map(n => `<option value="${n.nama}">${n.nama}</option>`).join('')
 							: `<option value="">(Belum ada anggota)</option>`;
 						}
-					} else {
-						ui.title.innerText = "TAMBAH TRANSAKSI";
-						ui.btnM.innerText = "PEMASUKAN";
-						ui.btnK.innerText = "PENGELUARAN";
+				} else {
+					title.innerText = "TAMBAH TRANSAKSI";
+					btnM.innerText = "PEMASUKAN";
+					btnK.innerText = "PENGELUARAN";
 
-					if (bukuAktif === 'lingkungan') {
+				if (bukuAktif === 'lingkungan') {
 					if(ui.jimpitan) ui.jimpitan.classList.remove('hidden');
 					if(ui.lingkungan) ui.lingkungan.classList.remove('hidden');
-						} else if (bukuAktif === 'mushola') {
-							if(ui.mushola) ui.mushola.classList.remove('hidden');
-							}
+				} else if (bukuAktif === 'mushola') {
+					if(ui.mushola) ui.mushola.classList.remove('hidden');
+					if(ui.mushola) ui.mushola.classList.remove('hidden');
 					}
+				}
 
 				// 6. Tampilkan Modal
 				document.getElementById('modal-input').classList.remove('hidden');
+				document.getElementById('modal-input').classList.add('flex');
 			}
 	
 	
@@ -1180,27 +1384,59 @@
 				document.getElementById('modal-input').classList.add('hidden'); 
 				idSedangDiedit = null; // Tambahan: Reset ID setiap kali modal ditutup
 			}
-
-				let tipeTerpilih = 'masuk';
+		
+		
+		// --- FUNGSI TIPE TERPILIH (v1.15.0 - Dinamis & Kontekstual) ---
+			let tipeTerpilih = 'masuk';
 
 			function setTipe(t) {
 				tipeTerpilih = t;
 				const bMasuk = document.getElementById('btn-tipe-masuk');
 				const bKeluar = document.getElementById('btn-tipe-keluar');
-    
-				// Class dasar untuk tombol yang tidak aktif
-				const classPasif = "flex-1 py-2 rounded-lg bg-gray-200 text-gray-600 font-bold text-xs";
-				// Class untuk tombol aktif
-				const classAktifMasuk = "flex-1 py-2 rounded-lg bg-green-600 text-white font-bold text-xs";
-				const classAktifKeluar = "flex-1 py-2 rounded-lg bg-red-600 text-white font-bold text-xs";
 
-					if(t === 'masuk') {
-						bMasuk.className = classAktifMasuk;
-						bKeluar.className = classPasif;
+				if (!bMasuk || !bKeluar) return; 
+
+				// 1. Logika Perubahan Visual Tombol
+				const classPasif = "flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all bg-transparent text-gray-500";
+				const classAktifMasuk = "flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all bg-green-600 text-white shadow-sm";
+				const classAktifKeluar = "flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all bg-red-600 text-white shadow-sm";
+
+				if (t === 'masuk') {
+					bMasuk.className = classAktifMasuk;
+					bKeluar.className = classPasif;
+				} else {
+					bMasuk.className = classPasif;
+					bKeluar.className = classAktifKeluar;
+				}
+
+				// 2. Logika Shortcut Lingkungan (Hanya jika Buku Lingkungan)
+				if (bukuAktif === 'lingkungan') {
+					const grupMasuk = document.getElementById('group-masuk-lingkungan');
+					const grupKeluar = document.getElementById('group-keluar-lingkungan');
+
+					if (t === 'masuk') {
+						// Tampilkan Jimpitan, Sembunyikan Beli/PAM
+						if (grupMasuk) grupMasuk.classList.remove('hidden');
+						if (grupKeluar) grupKeluar.classList.add('hidden');
 					} else {
-						bMasuk.className = classPasif;
-						bKeluar.className = classAktifKeluar;
+						// Sembunyikan Jimpitan, Tampilkan Beli/PAM
+						if (grupMasuk) grupMasuk.classList.add('hidden');
+						if (grupKeluar) grupKeluar.classList.remove('hidden');
 					}
+				}
+				
+				// 3. LOGIKA SHORTCUT MUSHOLA (Tambahan Baru)
+				if (bukuAktif === 'mushola') {
+					const grupMasukM = document.getElementById('group-masuk-mushola');
+					const grupKeluarM = document.getElementById('group-keluar-mushola');
+					if (t === 'masuk') {
+						if (grupMasukM) grupMasukM.classList.remove('hidden');
+						if (grupKeluarM) grupKeluarM.classList.add('hidden');
+					} else {
+						if (grupMasukM) grupMasukM.classList.add('hidden');
+						if (grupKeluarM) grupKeluarM.classList.remove('hidden');
+					}
+				}
 			}	
 	
 	
@@ -1289,17 +1525,38 @@
 		
 		// --- SISTEM JIMPITAN HARIAN ---
 			function bukaModalJimpitan() {
+				// 1. Cek apakah ini input baru (bukan sedang mode edit riwayat)
+				if (idSedangDiedit === null) {
+					const namaBulanIndo = ["", "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+					const ketCari = `JIMPITAN ${namaBulanIndo[periodeAktif.bulan]} ${periodeAktif.tahun}`;
+					
+					// Cari apakah sudah ada keterangan yang sama di riwayat
+					const transaksiAda = dbTransaksi.find(t => t.keterangan === ketCari);
+
+					if (transaksiAda) {
+						alert(`⚠️ Data ${ketCari} sudah ada di riwayat!\n\nSilakan perbarui langsung melalui riwayat transaksi agar tidak ganda.`);
+						
+						// Tutup modal input utama jika sedang terbuka
+						tutupModalInput();
+						
+						// OTOMATIS ARANKAN KE EDIT
+						editTransaksi(transaksiAda.id); 
+						return; // Batalkan pembukaan modal jimpitan biasa
+					}
+				}
+
+				// 2. Jika lolos pengecekan (atau memang sedang mode edit), buka modalnya
 				document.getElementById('modal-jimpitan').classList.remove('hidden');
 				
 				const btnHapus = document.getElementById('btn-hapus-jimpitan');
-				const btnTeks = document.getElementById('btn-teks-jimpitan');
+				const btnSimpan = document.querySelector('[onclick="pindahkanKeNominalUtama()"]');
 
 				if (idSedangDiedit !== null) {
 					if(btnHapus) btnHapus.classList.remove('hidden');
-					if(btnTeks) btnTeks.innerText = "UPDATE DATA JIMPITAN";
+					if(btnSimpan) btnSimpan.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Perbarui Jimpitan';
 				} else {
 					if(btnHapus) btnHapus.classList.add('hidden');
-					if(btnTeks) btnTeks.innerText = "MASUKKAN KE NOMINAL UTAMA";
+					if(btnSimpan) btnSimpan.innerHTML = '<i class="fas fa-arrow-right mr-2"></i> Masukkan Nominal ke Form';
 				}
 				
 				renderJimpitanHarian();
@@ -1315,7 +1572,6 @@
 				let html = '';
 				let total = 0;
 
-				// Hitung jumlah hari dalam bulan aktif
 				const tglTerakhir = new Date(periodeAktif.tahun, periodeAktif.bulan, 0).getDate();
 
 				for (let i = 1; i <= tglTerakhir; i++) {
@@ -1325,19 +1581,27 @@
 					total += nominal;
 
 					html += `
-						<div class="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
-							<span class="text-[9px] font-black text-gray-400 w-8 uppercase">Tgl ${i}</span>
-							<input type="text" inputmode="numeric" 
-								value="${nominal > 0 ? formatRupiah(nominal) : ""}" 
-								placeholder="0" 
-								oninput="formatInputRibuan(this); updateJimpitan('${key}', this.value)"
-								class="flex-1 bg-white border-2 border-transparent focus:border-orange-400 rounded-lg p-1.5 text-xs font-bold text-right outline-none transition-all">
+						<div class="flex items-center justify-between bg-gray-50 p-3 rounded-2xl border border-gray-100 mb-2">
+							<div class="flex flex-col">
+								<span class="text-[9px] font-black text-gray-400 uppercase leading-none">Tanggal</span>
+								<span class="text-sm font-black text-gray-700">${String(i).padStart(2, '0')}</span>
+							</div>
+							
+							<div class="flex-1 max-w-[150px] relative">
+								<span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">Rp</span>
+								<input type="text" inputmode="numeric" 
+									value="${nominal > 0 ? formatRupiah(nominal) : ""}" 
+									placeholder="0" 
+									oninput="formatInputRupiah(this); updateJimpitan('${key}', this.value)"
+									class="w-full bg-white border-2 border-transparent focus:border-orange-400 rounded-xl py-2 pl-8 pr-3 text-sm font-black text-right outline-none transition-all shadow-sm">
+							</div>
 						</div>
 					`;
 				}
-				// Gunakan grid 2 kolom agar hemat tempat di layar HP
-				container.className = "grid grid-cols-2 gap-2 overflow-y-auto max-h-[60vh] p-1";
+
+				container.className = "flex flex-col overflow-y-auto max-h-[55vh] pr-1";
 				container.innerHTML = html;
+				// Menggunakan fungsi formatRupiah milik Anda
 				totalLabel.innerText = "Rp " + formatRupiah(total);
 			}
 
@@ -1351,25 +1615,15 @@
 					dbJimpitan.push({ key, nominal });
 				}
 
-				// Hitung total bulan ini
+				// Hitung total bulan ini saja
 				const totalBulanIni = dbJimpitan
 					.filter(d => d.key.startsWith(`${periodeAktif.tahun}-${periodeAktif.bulan}-`))
 					.reduce((acc, curr) => acc + curr.nominal, 0);
 
 				document.getElementById('total-jimpitan-label').innerText = "Rp " + formatRupiah(totalBulanIni);
-
-				// OTOMATIS SYNC KE TRANSAKSI UTAMA
-				// Kita cari transaksi yang mengandung kata "JIMPITAN" di periode ini
-				const trxJimpitan = dbTransaksi.find(t => 
-					t.keterangan.toUpperCase().includes("JIMPITAN") &&
-					t.tanggal.startsWith(`${periodeAktif.tahun}-${String(periodeAktif.bulan).padStart(2, '0')}`)
-				);
-
-				if (trxJimpitan) {
-					trxJimpitan.nominal = totalBulanIni;
-					saveAllData(); // Gunakan laci utama
-					renderData(); // Update tampilan list di belakang modal
-				}
+				
+				// Simpan ke storage (Database Jimpitan Terpisah)
+				saveAllData(); 
 			}
 
 			function pindahkanKeNominalUtama() {
@@ -1378,31 +1632,98 @@
 					.reduce((acc, curr) => acc + curr.nominal, 0);
 				
 				if (totalBulanIni === 0) {
-					alert("Data masih kosong, Pak!");
+					alert("Data jimpitan masih kosong!");
 					return;
 				}
 
-				// Isi ke form input utama
-				const inputNominal = document.getElementById('input-nominal');
-				const inputKeterangan = document.getElementById('input-keterangan');
+				const namaBulanIndo = ["", "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+				const ketJimpitan = `JIMPITAN ${namaBulanIndo[periodeAktif.bulan]} ${periodeAktif.tahun}`;
 
-				if (inputNominal) inputNominal.value = formatRupiah(totalBulanIni);
-				if (inputKeterangan) inputKeterangan.value = `JIMPITAN HARIAN BULAN ${periodeAktif.bulan}/${periodeAktif.tahun}`;
-				
-				tutupModalJimpitan();
+				if (idSedangDiedit !== null) {
+					// UPDATE LANGSUNG KE RIWAYAT
+					const index = dbTransaksi.findIndex(t => t.id == idSedangDiedit);
+					if (index !== -1) {
+						dbTransaksi[index].nominal = totalBulanIni;
+						dbTransaksi[index].keterangan = ketJimpitan;
+						
+						saveAllData();
+						renderData();
+						updateLabelHeader();
+						tutupModalJimpitan();
+						idSedangDiedit = null; // Reset kunci
+						alert("✅ Data di riwayat berhasil diperbarui!");
+					}
+				} else {
+					// INPUT BARU: Mampir ke Form Utama
+					const inputNominal = document.getElementById('input-nominal');
+					const inputKeterangan = document.getElementById('input-keterangan');
+
+					if (inputNominal) inputNominal.value = formatRupiah(totalBulanIni);
+					if (inputKeterangan) inputKeterangan.value = ketJimpitan;
+					
+					setTipe('masuk');
+					tutupModalJimpitan();
+					bukaModalInput();
+				}
 			}
+
+			function editTransaksi(id) {
+				const trx = dbTransaksi.find(t => t.id == id);
+				if (!trx) return;
+
+				idSedangDiedit = id; // Kunci ID agar tidak ganda saat simpan
+
+				// 1. Jika ini transaksi JIMPITAN
+				if (trx.keterangan && trx.keterangan.toUpperCase().includes("JIMPITAN")) {
+					bukaModalJimpitan();
+				} 
+				// 2. Jika ini transaksi BIASA
+				else {
+					// Isi data ke form input utama
+					document.getElementById('input-nominal').value = formatRupiah(trx.nominal);
+					document.getElementById('input-keterangan').value = trx.keterangan;
+					
+					// Panggil fungsi setTipe yang sudah ada di v1.15 Bapak
+					if (typeof setTipe === "function") setTipe(trx.tipe);
+
+					// Munculkan tombol hapus di modal input
+					const btnHapus = document.getElementById('btn-hapus-transaksi');
+					if (btnHapus) btnHapus.classList.remove('hidden');
+
+					// Buka modal input utama
+					bukaModalInput();
+				}
+			}
+
 
 			function hapusTotalJimpitan() {
 				if (idSedangDiedit === null) return;
 
-				if (confirm("⚠️ Hapus total jimpitan ini dari riwayat utama?")) {
+				if (confirm("⚠️ Hapus total jimpitan ini? Rincian harian bulan ini juga akan dibersihkan.")) {
+					// 1. Hapus dari riwayat transaksi utama
 					dbTransaksi = dbTransaksi.filter(t => t.id != idSedangDiedit);
-					saveAllData();
-					
+
+					// 2. Bersihkan database jimpitan harian KHUSUS bulan & tahun yang aktif
+					// Kita hapus semua data yang kuncinya diawali dengan "Tahun-Bulan-"
+					const prefix = `${periodeAktif.tahun}-${periodeAktif.bulan}-`;
+					dbJimpitan = dbJimpitan.filter(d => !d.key.startsWith(prefix));
+
+					// 3. Bersihkan Form Input Utama (agar tidak sisa angka jimpitan)
+					const inputNominal = document.getElementById('input-nominal');
+					const inputKeterangan = document.getElementById('input-keterangan');
+					if (inputNominal) inputNominal.value = "";
+					if (inputKeterangan) inputKeterangan.value = "";
+
+					// 4. Reset ID sedang diedit
 					idSedangDiedit = null;
-					tutupModalJimpitan();
+
+					// 5. Simpan dan Refresh tampilan
+					saveAllData();
 					renderData();
-					alert("🗑️ Riwayat jimpitan dihapus.");
+					updateLabelHeader();
+					tutupModalJimpitan();
+					
+					alert("🗑️ Jimpitan dan rincian harian berhasil dibersihkan total.");
 				}
 			}
 		
@@ -1452,9 +1773,17 @@
 							<div class="max-h-[350px] overflow-y-auto px-1 custom-scrollbar">
 								${htmlRiwayat || '<p class="text-center py-10 text-[10px] font-bold text-gray-400 uppercase">Belum ada transaksi</p>'}
 							</div>
-							<button onclick="document.getElementById('modal-detail-riwayat').remove()" class="w-full mt-5 bg-gray-100 py-3 rounded-2xl font-black text-[10px] text-gray-500 uppercase tracking-widest active:scale-95 transition-all">
-								TUTUP RIWAYAT
-							</button>
+
+							<div class="flex gap-2 mt-5">
+								<button onclick="kirimWATab('${nama}')" class="flex-1 bg-green-600 text-white py-3 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center active:scale-95 transition-all shadow-lg shadow-green-100">
+									<i class="fab fa-whatsapp mr-2 text-sm"></i> Kirim Tabungan
+								</button>
+								
+								<button onclick="document.getElementById('modal-detail-riwayat').remove()" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-2xl font-black text-[10px] uppercase active:scale-95 transition-all">
+									Tutup Riwayat
+								</button>
+							</div>
+							
 						</div>
 					</div>
 				`;
@@ -1511,209 +1840,275 @@
 	
 	
 		// --- SISTEM KIRIM WHATSAPP OTOMATIS ---
-			function simpanDanKirimWA() {
-				// 1. Ambil input
-				const inputNama = document.getElementById('select-anggota');
-				const inputNominal = document.getElementById('input-nominal');
+			function kirimWATab(namaUser) {
+				console.log("Memulai proses kirim WA untuk:", namaUser);
 
-				if (!inputNama || !inputNama.value || !inputNominal.value) {
-					alert("⚠️ Pilih nama dan isi nominal dulu, Pak!");
+				if (!namaUser) return alert("⚠️ Nama tidak terbaca!");
+
+				// 1. Ambil data dari mana saja (Cek dbAnggota atau dataAnggota)
+				// Ini cara agar tidak "Zonk" kalau salah panggil variabel
+				let sumberData = [];
+				if (typeof dbAnggota !== 'undefined' && dbAnggota.length > 0) {
+					sumberData = dbAnggota;
+				} else if (typeof dataAnggota !== 'undefined' && dataAnggota.length > 0) {
+					sumberData = dataAnggota;
+				}
+
+				if (sumberData.length === 0) {
+					alert("❌ Database Anggota kosong! Isi dulu di menu Setelan.");
 					return;
 				}
 
-				const namaUser = inputNama.value;
+				// 2. Cari Anggota (Sangat Toleran: Huruf kecil/besar & Spasi dibuang)
+				const namaCari = namaUser.trim().toLowerCase();
+				const ketemu = sumberData.find(a => 
+					(a.nama || "").trim().toLowerCase() === namaCari
+				);
 
-				// 2. Simpan dulu ke database (Pastikan fungsi simpanTransaksi() sudah ada)
-				simpanTransaksi(); 
-
-				// 3. Cari nomor WA anggota
-				const dataAnggota = dbAnggota.find(a => a.nama === namaUser);
-
-				if (!dataAnggota || !dataAnggota.wa) {
-					alert(`✅ Data tersimpan, tapi nomor WA '${namaUser}' tidak ditemukan di Setelan.`);
+				// 3. Jika Tidak Ketemu / WA Kosong
+				if (!ketemu || !ketemu.wa) {
+					console.error("Gagal menemukan:", namaCari, "di dalam", sumberData);
+					alert(`❌ Nama '${namaUser}' ditemukan, tapi NOMOR WA KOSONG.\n\nPerbaiki di Menu Setelan Anggota.`);
 					return;
 				}
 
-				// 4. Bersihkan Nomor WA (Ubah 08... jadi 628...)
-				let noWA = dataAnggota.wa.replace(/[^0-9]/g, ''); // Ambil angka saja
-				if (noWA.startsWith('0')) {
-					noWA = '62' + noWA.substring(1);
+				// 4. Bersihkan Nomor WA (Pastikan cuma angka)
+				let noWA = ketemu.wa.toString().replace(/[^0-9]/g, '');
+				if (noWA.startsWith('0')) noWA = '62' + noWA.substring(1);
+				if (!noWA.startsWith('62')) noWA = '62' + noWA;
+
+				// 5. Ambil Riwayat Transaksi (Gunakan dbTransaksi atau dataTransaksi)
+				let sumberTrx = (typeof dbTransaksi !== 'undefined') ? dbTransaksi : dataTransaksi;
+				const riwayat = sumberTrx.filter(t => 
+					(t.keterangan || "").trim().toLowerCase() === namaCari && 
+					t.buku === 'ziarah'
+				).sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+
+				if (riwayat.length === 0) {
+					alert("Belum ada riwayat transaksi ziarah untuk nama ini.");
+					return;
 				}
 
-				// 5. Ambil riwayat terbaru (Termasuk yang barusan disimpan)
-				const riwayat = dbTransaksi.filter(t => t.keterangan === namaUser && t.buku === 'ziarah')
-											.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
-
+				// 6. Hitung Saldo & Rincian
 				let rincian = "";
 				let totalSaldo = 0;
-
 				riwayat.forEach((t, index) => {
-					const tipe = t.tipe === 'masuk' ? 'Setor' : 'Tarik';
-					const tglSimpel = t.tanggal.split('-').reverse().join('/'); // Ubah yyyy-mm-dd jadi dd/mm/yyyy
-					rincian += `${index + 1}. ${tglSimpel} (${tipe}) : Rp ${formatRupiah(t.nominal)}\n`;
-					totalSaldo += (t.tipe === 'masuk' ? t.nominal : -t.nominal);
+					const tipe = t.tipe === 'masuk' ? 'SETOR' : 'TARIK';
+					const tgl = t.tanggal.split('-').reverse().join('/');
+					rincian += `${index + 1}. ${tgl} [${tipe}] Rp ${formatRupiah(t.nominal)}\n`;
+					totalSaldo += (t.tipe === 'masuk' ? Number(t.nominal) : -Number(t.nominal));
 				});
 
-				// 6. Susun Pesan
+				// 7. Susun Pesan dengan Hari dan Tanggal Lengkap
 				const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 				const d = new Date();
 				const tglSekarang = `${hari[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+				
+				const pesan = 
+`*[ BUKTI TABUNGAN ZIARAH ]*
 
-				const pesanPura = 
-					`*[ BUKTI TABUNGAN ZIARAH ]*
+Nama: *${namaUser}*
+Pembaruan: ${tglSekarang}
+------------------------------------------
+*RINCIAN TABUNGAN:*
+${rincian}
+------------------------------------------
+*TOTAL SALDO: Rp ${formatRupiah(totalSaldo)}*
 
-					Nama: *${namaUser}*
-					Update: ${tglSekarang}
-					------------------------------------------
-					*RINCIAN TABUNGAN:*
-					${rincian}
-					------------------------------------------
-					*TOTAL SALDO: Rp ${formatRupiah(totalSaldo)}*
-
-					_Terima kasih sudah menabung._
-					_Simpan pesan ini sebagai bukti sah._
-					_Powered by Kas Saku v1.15_`;
+_Terima kasih sudah menabung._
+_Simpan pesan ini sebagai bukti sah._
+_Pesan dicatat via Aplikasi Kas Saku v1.15.17_`;
 
 				// 7. Eksekusi Kirim (Gunakan encodeURIComponent agar simbol aman)
-				const url = `https://wa.me/${noWA}?text=${encodeURIComponent(pesanPura)}`;
+				const url = `https://wa.me/${noWA}?text=${encodeURIComponent(pesan)}`;
 				
 				// Buka jendela baru untuk WA
 				window.open(url, '_blank');
 			}
-	
-	
+
 	
 	
 		// --- SISTEM AUDIT & DASHBOARD DOMPET ---
 			function saveDompet() {
-				// Gunakan fungsi sentral agar semua data (termasuk dompet) tersimpan aman
-				if (typeof saveAllData === "function") {
-					saveAllData();
-				} else {
-					localStorage.setItem('kas_saku_dompet', JSON.stringify(dbDompet));
-				}
+				// 1. Simpan ke memori permanen (LocalStorage)
+				localStorage.setItem('kas_saku_dompet', JSON.stringify(dbDompet));
+				
+				// 2. Langsung update tampilan dashboard
 				updateDashboardDompet();
+				
+				// 3. Render ulang semua daftar rincian
+				if (typeof renderListHutang === "function") renderListHutang();
+				if (typeof renderListBank === "function") renderListBank();
+				if (typeof renderListTunai === "function") renderListTunai();
+			}
+			
+			// Fungsi pembantu agar Audit bisa menghitung uang per kategori
+			function hitungFisikPerBuku(namaBuku) {
+				const bukuCari = namaBuku.toLowerCase().trim();
+				
+				// Hitung Tunai untuk buku ini
+				const t = dbDompet.tunai
+					.filter(item => item.buku.toLowerCase().trim() === bukuCari)
+					.reduce((acc, curr) => acc + (Number(curr.nominal) || 0), 0);
+					
+				// Hitung Bank untuk buku ini
+				const b = dbDompet.bank
+					.filter(item => item.buku.toLowerCase().trim() === bukuCari)
+					.reduce((acc, curr) => acc + (Number(curr.nominal) || 0), 0);
+					
+				return t + b;
 			}
 
 			function updateDashboardDompet() {
-				// 1. HITUNG DATA DARI GRUP DOMPET (SUMBER UANG FISIK)
-				const totalHutang = dbDompet.hutang.reduce((acc, h) => acc + (Number(h.nominal) || 0), 0);
+				// 1. Ambil data mentah
 				const totalBank = dbDompet.bank.reduce((acc, b) => acc + (Number(b.nominal) || 0), 0);
 				const totalTunai = dbDompet.tunai.reduce((acc, t) => acc + (Number(t.nominal) || 0), 0);
+				const totalHutang = dbDompet.hutang.reduce((acc, h) => acc + (Number(h.nominal) || 0), 0);
 				
-				// Total Aset Nyata (Bank + Tunai) & Saldo Bersih
-				const totalAsetNyata = totalBank + totalTunai;
-				const saldoFisikOtomatis = totalAsetNyata - totalHutang;
+				// 2. Hitung Rumus: (Bank + Tunai) - Hutang
+				const totalAsetNyata = totalBank + totalTunai; 
+				const saldoFisikBersih = totalAsetNyata - totalHutang;
 
-				// 2. HITUNG TOTAL SALDO BUKU (DARI SEMUA TRANSAKSI APP)
-				const totalSaldoBuku = dbTransaksi.reduce((acc, t) => {
-					const nominal = Number(t.nominal) || 0;
-					return acc + (t.tipe === 'masuk' ? nominal : -nominal);
-				}, 0);
-
-				// 3. TAMPILKAN KE KARTU UTAMA (RINGKASAN)
+				// 3. Tampilkan ke Kartu Atas (Pastikan ID ini ada di HTML)
+				// Kita gunakan pengaman 'if' supaya tidak error jika ID salah ketik
 				const elBersih = document.getElementById('dompet-aset-bersih');
-				const elTotal = document.getElementById('dompet-total-aset');
-				const elHutang = document.getElementById('dompet-total-hutang');
-				
-				if(elBersih) elBersih.innerText = `Rp ${formatRupiah(saldoFisikOtomatis)}`;
-				if(elTotal) elTotal.innerText = `Rp ${formatRupiah(totalAsetNyata)}`;
-				if(elHutang) elHutang.innerText = `Rp ${formatRupiah(totalHutang)}`;
+				const elTotalAset = document.getElementById('dompet-total-aset');
+				const elTotalHutang = document.getElementById('dompet-total-hutang');
 
-				// 4. JALANKAN RINCIAN AUDIT PER GRUP (Cek Selisih)
-				renderGrupSelisih();
+				if (elBersih) elBersih.innerText = `Rp ${formatRupiah(saldoFisikBersih)}`;
+				if (elTotalAset) elTotalAset.innerText = `Rp ${formatRupiah(totalAsetNyata)}`;
+				if (elTotalHutang) elTotalHutang.innerText = `Rp ${formatRupiah(totalHutang)}`;
+
+				// 4. Jalankan Audit di bawahnya
+				renderGrupSelisih(); 
 			}
 
 			function renderGrupSelisih() {
 				const container = document.getElementById('container-cek-selisih-grup');
 				if (!container) return;
 
-				// Daftar buku yang akan diaudit
 				const daftarBuku = ['lingkungan', 'mushola', 'ziarah'];
-				let grandTotalBuku = 0;
-				let grandTotalFisik = 0;
+				let grandTotalBukuCatatan = 0;
+				let grandTotalFisikBersih = 0;
 				
 				let listRincianBuku = "";
 				let listRincianFisik = "";
 				let listRincianSelisih = "";
 
 				daftarBuku.forEach(kas => {
-					// A. Hitung Saldo Buku (Dari riwayat transaksi)
-					const sBuku = dbTransaksi
-						.filter(t => t.buku && t.buku.toLowerCase().trim() === kas)
-						.reduce((acc, curr) => curr.tipe === 'masuk' ? acc + (Number(curr.nominal) || 0) : acc - (Number(curr.nominal) || 0), 0);
+					const target = kas.toLowerCase().trim();
 
-					// B. Hitung Saldo Fisik (Dari pembagian di Dompet/Bank)
-					const sFisik = hitungFisikPerBuku(kas);
-					const selisih = sFisik - sBuku;
+					// 1. SALDO BUKU (DARI TRANSAKSI) - Versi Anti-Dobel Januari
+						const sBuku = dbTransaksi
+							.filter(t => t.buku && t.buku.toLowerCase().trim() === target)
+							.reduce((acc, curr) => {
+								// Ambil data bulan dari tanggal (format yyyy-mm-dd atau dd-mm-yyyy)
+								// Kita pastikan ambil bagian bulannya saja
+								const parts = curr.tanggal.split('-');
+								const bulan = parts[1]; // Mengambil posisi bulan
+								const isJanuari = (bulan === '01');
+								
+								// Cek apakah keterangan mengandung kata "saldo awal"
+								const isSaldoAwal = curr.keterangan && curr.keterangan.toLowerCase().includes("saldo awal");
 
-					grandTotalBuku += sBuku;
-					grandTotalFisik += sFisik;
+								// LOGIKA: Jika transaksi adalah "Saldo Awal" di bulan JANUARI, 
+								// abaikan nominalnya (anggap 0) karena sudah ada di dbSaldoAwal
+								if (isJanuari && isSaldoAwal) {
+									return acc; 
+								}
 
-					// C. Rakit HTML Rincian
+								// Jika bukan saldo awal januari, hitung normal
+								return curr.tipe === 'masuk' ? acc + (Number(curr.nominal) || 0) : acc - (Number(curr.nominal) || 0);
+							}, 0);
+
+					// 2. SALDO FISIK (BANK + TUNAI - HUTANG)
+					// Menggunakan .includes() karena di database tertulis "KAS LINGKUNGAN (BANK)"
+					const fBank = dbDompet.bank
+						.filter(b => b.buku && b.buku.toLowerCase().includes(target))
+						.reduce((acc, b) => acc + (Number(b.nominal) || 0), 0);
+						
+					const fTunai = dbDompet.tunai
+						.filter(t => t.buku && t.buku.toLowerCase().includes(target))
+						.reduce((acc, t) => acc + (Number(t.nominal) || 0), 0);
+						
+					const fHutang = dbDompet.hutang
+						.filter(h => h.buku && h.buku.toLowerCase().includes(target))
+						.reduce((acc, h) => acc + (Number(h.nominal) || 0), 0);
+
+					const sFisikBersih = fBank + fTunai + fHutang;
+					const selisih = sFisikBersih - sBuku;
+
+					grandTotalBukuCatatan += sBuku;
+					grandTotalFisikBersih += sFisikBersih;
+
+					// 3. RAKIT TAMPILAN RINCIAN
 					listRincianBuku += `
 						<div class="flex justify-between text-[10px] py-0.5">
-							<span class="text-gray-400 font-bold uppercase tracking-tighter">${kas}</span>
+							<span class="text-gray-400 font-bold uppercase">${kas}</span>
 							<span class="text-gray-600 font-mono">Rp ${formatRupiah(sBuku)}</span>
 						</div>`;
 
 					listRincianFisik += `
 						<div class="flex justify-between text-[10px] py-0.5">
-							<span class="text-gray-400 font-bold uppercase tracking-tighter">${kas}</span>
-							<span class="text-blue-500 font-black font-mono">Rp ${formatRupiah(sFisik)}</span>
+							<span class="text-gray-400 font-bold uppercase">${kas}</span>
+							<span class="text-blue-600 font-black font-mono">Rp ${formatRupiah(sFisikBersih)}</span>
 						</div>`;
 					
 					listRincianSelisih += `
 						<div class="flex justify-between text-[10px] font-black py-1 border-b border-gray-50 last:border-0">
 							<span class="text-gray-500 uppercase tracking-widest">${kas}</span>
-							<span class="${selisih < 0 ? 'text-red-500' : (selisih > 0 ? 'text-yellow-600' : 'text-green-500')} italic">
-								${selisih === 0 ? '✓ PAS' : (selisih < 0 ? '-' : '+') + ' Rp ' + formatRupiah(Math.abs(selisih))}
+							<span class="${selisih < 0 ? 'text-red-600' : (selisih > 0 ? 'text-orange-600' : 'text-green-600')} italic">
+								${selisih === 0 ? '✓ SESUAI' : (selisih < 0 ? '-' : '+') + ' Rp ' + formatRupiah(Math.abs(selisih))}
 							</span>
 						</div>`;
 				});
 
-				const totalSelisihGlobal = grandTotalFisik - grandTotalBuku;
+				const totalSelisihGlobal = grandTotalFisikBersih - grandTotalBukuCatatan;
 
-				// D. TAMPILKAN KE UI
+				// 4. UPDATE KARTU DASHBOARD ATAS
+				const elBersihAtas = document.getElementById('dompet-aset-bersih');
+				if (elBersihAtas) elBersihAtas.innerText = "Rp " + formatRupiah(grandTotalFisikBersih);
+				
+				// 5. RENDER BOX AUDIT KE UI
 				container.innerHTML = `
-					<div class="bg-white rounded-3xl p-5 shadow-2xl shadow-gray-100 border border-gray-50 animate-scale-in">
+					<div class="bg-white rounded-3xl p-5 shadow-2xl border border-gray-50">
 						<div class="flex justify-between items-center mb-5">
 							<div>
 								<h3 class="text-[11px] font-black text-gray-800 uppercase tracking-widest flex items-center">
-									<i class="fas fa-microscope mr-2 text-blue-500"></i> Audit Saldo
+									<i class="fas fa-microscope mr-2 text-blue-500"></i> CEK SELISIH
 								</h3>
-								<p class="text-[9px] text-gray-400 font-bold italic uppercase">Buku vs Uang Nyata</p>
+								<p class="text-[9px] text-gray-400 font-bold italic uppercase tracking-tighter">Buku Kas & Fisik Uang</p>
 							</div>
-							<span class="px-3 py-1.5 ${totalSelisihGlobal === 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'} rounded-xl text-[9px] font-black uppercase tracking-tighter">
-								${totalSelisihGlobal === 0 ? '✓ Sesuai' : '⚠ Selisih'}
+							<span class="px-3 py-1 ${totalSelisihGlobal === 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'} rounded-lg text-[9px] font-black uppercase">
+								${totalSelisihGlobal === 0 ? '✓ Data Sesuai' : '⚠ Ada Selisih'}
 							</span>
 						</div>
 
-						<div class="space-y-5">
-							<div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
+						<div class="space-y-4">
+							<div class="bg-gray-50/80 p-3 rounded-2xl border border-gray-100">
 								<div class="flex justify-between text-[10px] font-black mb-2 border-b pb-1">
-									<span class="text-gray-500 uppercase">Total Saldo App</span>
-									<span class="text-gray-800">Rp ${formatRupiah(grandTotalBuku)}</span>
+									<span class="text-gray-500 uppercase">Total Saldo Buku Kas</span>
+									<span class="text-gray-800">Rp ${formatRupiah(grandTotalBukuCatatan)}</span>
 								</div>
 								<div class="space-y-1">${listRincianBuku}</div>
 							</div>
 
-							<div class="bg-blue-50/30 p-3 rounded-2xl border border-blue-50">
-								<div class="flex justify-between text-[10px] font-black mb-2 border-b border-blue-100 pb-1">
-									<span class="text-blue-400 uppercase">Total Fisik (Dompet)</span>
-									<span class="text-blue-600">Rp ${formatRupiah(grandTotalFisik)}</span>
+							<div class="bg-blue-50/50 p-3 rounded-2xl border border-blue-100">
+								<div class="flex justify-between text-[10px] font-black mb-2 border-b border-blue-200 pb-1">
+									<span class="text-blue-500 uppercase">Total Uang Fisik</span>
+									<span class="text-blue-700">Rp ${formatRupiah(grandTotalFisikBersih)}</span>
 								</div>
 								<div class="space-y-1">${listRincianFisik}</div>
 							</div>
 
 							<div class="pt-3">
 								<div class="flex justify-between items-center px-1 mb-3">
-									<span class="text-[10px] font-black text-gray-400 uppercase">Hasil Akhir:</span>
-									<span class="text-lg font-black ${totalSelisihGlobal < 0 ? 'text-red-600' : (totalSelisihGlobal > 0 ? 'text-yellow-600' : 'text-green-600')} tracking-tighter">
+									<span class="text-[20px] font-black text-gray-600 uppercase">Total Selisih :</span>
+									<span class="text-lg font-black ${totalSelisihGlobal < 0 ? 'text-red-600' : (totalSelisihGlobal > 0 ? 'text-orange-600' : 'text-green-600')} tracking-tighter">
 										Rp ${formatRupiah(totalSelisihGlobal)}
 									</span>
 								</div>
-								<div class="bg-white border-2 border-gray-50 rounded-2xl p-3 space-y-1">
+								<div class="bg-gray border-2 border-gray-50 rounded-2xl p-3 space-y-1">
 									${listRincianSelisih}
 								</div>
 							</div>
@@ -1741,6 +2136,8 @@
 				document.getElementById('hutang-nama').value = "";
 				document.getElementById('hutang-nominal').value = "";
 				document.getElementById('hutang-buku').selectedIndex = 0;
+				
+				if (!modal) return;
 			}
 
 			function saveDompet() {
@@ -1760,21 +2157,38 @@
 				const nom = parseInt(nominalRaw) || 0;
 
 				if (!nama || nom <= 0) {
-					alert("⚠️ Nama dan Nominal harus diisi dengan benar, Pak!");
+					alert("⚠️ Nama dan Nominal harus diisi!");
 					return;
 				}
 
+				// 1. HANYA SIMPAN KE HUTANG
 				const dataBaru = {
-					id: Date.now(), // Unik ID berdasarkan waktu
+					id: Date.now(),
 					tanggal: tgl,
 					nama: nama,
 					buku: buku,
 					nominal: nom
 				};
-
 				dbDompet.hutang.push(dataBaru);
-				saveDompet();
+				
+				// 2. Simpan permanen & refresh list hutang
+				saveDompet(); 
 				tutupModalHutang();
+				renderListHutang();
+
+				// 3. TRIGGER: Hanya "Membukakan" pintu kalkulator
+				// Cari ID data tunai yang sesuai buku
+				const dataFisik = dbDompet.tunai.find(t => t.buku === buku);
+
+				if (dataFisik) {
+					setTimeout(() => {
+						// Kita kasih info ke Bapak
+						alert(`Pelunasan ${nama} tersimpan di catatan hutang. \n\nSekarang silakan update fisik uang di dompet melalui kalkulator.`);
+						
+						// Buka Modal Kalkulator (editTunai hanya Menampilkan Modal, tidak menyimpan data)
+						editTunai(dataFisik.id); 
+					}, 500);
+				}
 			}
 
 			function renderListHutang() {
@@ -1809,7 +2223,7 @@
 							</div>
 							
 							<div class="flex gap-1">
-								<button onclick="bayarHutang(${h.id})" class="w-8 h-8 bg-green-100 text-green-600 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-sm shadow-green-100">
+								<button onclick="bukaModalBayarHutang(${h.id})" class="w-8 h-8 bg-green-100 text-green-600 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-sm shadow-green-100">
 									<i class="fas fa-hand-holding-dollar text-sm"></i>
 								</button>
 
@@ -1823,31 +2237,125 @@
 			}
 
 			function prosesBayarHutang() {
-				const index = dbDompet.hutang.findIndex(h => h.id === tempIdBayar);
-				if (index === -1) return;
+				// 1. AMBIL DATA DARI MODAL BAYAR
+				const idHutang = window.idHutangAktif;
+				const nominalBayar = parseInt(document.getElementById('bayar-nominal').value.replace(/\D/g, "")) || 0;
+				const metode = document.querySelector('input[name="tujuan-bayar"]:checked')?.value || 'tunai';
 
-				const data = dbDompet.hutang[index];
-				const nomRaw = document.getElementById('bayar-nominal').value.replace(/\./g, "");
-				const nominalBayar = parseInt(nomRaw) || 0;
+				if (nominalBayar <= 0) return alert("Masukkan nominal!");
 
-				if (nominalBayar <= 0) return alert("Nominal tidak valid!");
+				// 2. PROSES POTONG HUTANGNYA
+				const hIndex = dbDompet.hutang.findIndex(h => h.id === idHutang);
+				const dataHutang = dbDompet.hutang[hIndex];
+				const buku = dataHutang.buku.toUpperCase(); // Contoh: "MUSHOLA"
 
-				if (nominalBayar >= data.nominal) {
-					// LUNAS
-					if (confirm(`Hutang ${data.nama} sebesar Rp ${formatRupiah(data.nominal)} telah Lunas?`)) {
-						dbDompet.hutang.splice(index, 1);
-						alert("✅ Data pinjaman telah diselesaikan (Lunas).");
+				dataHutang.nominal -= nominalBayar;
+				if (dataHutang.nominal <= 0) dbDompet.hutang.splice(hIndex, 1);
+
+				// 3. TENTUKAN TARGET & LANGSUNG EDIT
+				saveDompet(); // Simpan dulu biar data hutang berkurang
+				tutupModalBayar();
+
+				if (metode === "bank") {
+					// Cari Bank yang namanya sama (Contoh: KAS MUSHOLA (BANK))
+					const targetBank = dbDompet.bank.find(b => b.buku.includes(buku));
+					
+					// Refresh layar biar angka hutang hilang
+					updateDashboardDompet();
+					renderListHutang();
+					renderListBank();
+
+					if (targetBank) {
+						editBank(targetBank.id); // Langsung buka modal edit bank-nya
 					} else {
-						return;
+						alert("Pelunasan tercatat, tapi buku Bank tidak ditemukan. Silakan update saldo Bank secara manual.");
 					}
 				} else {
-					// CICIL
-					dbDompet.hutang[index].nominal -= nominalBayar;
-					alert(`✅ Berhasil dicicil! Sisa hutang ${data.nama} tinggal Rp ${formatRupiah(dbDompet.hutang[index].nominal)}`);
+					// Cari Tunai yang namanya sama (Contoh: KAS MUSHOLA (TUNAI))
+					const targetTunai = dbDompet.tunai.find(t => t.buku.includes(buku));
+
+					updateDashboardDompet();
+					renderListHutang();
+					renderListTunai();
+
+					if (targetTunai) {
+						editTunai(targetTunai.id); // Langsung buka kalkulator tunai-nya
+					} else {
+						alert("Pelunasan tercatat, tapi buku Tunai tidak ditemukan.");
+					}
+				}
+			}
+			
+			
+			function bukaModalBayarHutang(id) {
+				const sumberData = dbDompet.data ? dbDompet.data : dbDompet;
+				const h = sumberData.hutang.find(x => x.id === id);
+				if (!h) return;
+
+				window.idHutangAktif = id;
+				
+				// Isi informasi ke UI Modal
+				document.getElementById('bayar-info-nama').innerText = h.nama;
+				document.getElementById('bayar-info-total').innerText = `Sisa: Rp ${h.nominal.toLocaleString('id-ID')}`;
+				
+				// Keterangan Asal Buku (agar user tahu ini buku lingkungan/mushola/ziarah)
+				const labelBuku = document.getElementById('bayar-info-buku');
+				labelBuku.innerText = `PINJAM DARI BUKU: ${h.buku.toUpperCase()}`;
+				
+				document.getElementById('bayar-nominal').value = "";
+				
+				// Tampilkan modal
+				const modal = document.getElementById('modal-bayar-hutang');
+				modal.classList.remove('hidden');
+				modal.classList.add('flex');
+			}
+			
+			
+			function tutupModalBayar() {
+				document.getElementById('modal-bayar-hutang').classList.add('hidden');
+				document.getElementById('bayar-nominal').value = "";
+				// Reset radio ke tunai
+				const radioTunai = document.querySelector('input[name="tujuan-bayar"][value="tunai"]');
+				if(radioTunai) radioTunai.checked = true;
+				
+				if (!modal) return;
+
+				// Tambahkan class animasi keluar (kita buat di CSS bawah)
+				modal.classList.add('animate-scale-out');
+
+				// Tunggu 200ms (durasi animasi) baru sembunyikan total
+				setTimeout(() => {
+					modal.classList.add('hidden');
+					modal.classList.remove('animate-scale-out');
+				}, 200);
+			}
+			
+			
+			function hapusHutang(id) {
+				// 1. Konfirmasi
+				if (!confirm("Hapus data hutang ini?")) return;
+
+				// 2. Pastikan ID yang diterima dikonversi ke Angka agar cocok dengan database
+				const targetId = Number(id);
+
+				// 3. Filter array hutang
+				const dataAwal = dbDompet.hutang.length;
+				dbDompet.hutang = dbDompet.hutang.filter(h => Number(h.id) !== targetId);
+				
+				// 4. Cek apakah ada yang terhapus (untuk debugging)
+				if (dbDompet.hutang.length === dataAwal) {
+					console.error("Gagal menghapus: ID tidak ditemukan atau tipe data beda", targetId);
 				}
 
-				saveDompet();
-				tutupModalBayar();
+				// 5. Simpan dan Update
+				// Cek apakah fungsi Bapak namanya saveDompet atau simpanDompet
+				if (typeof saveDompet === 'function') saveDompet();
+				else if (typeof simpanDompet === 'function') simpanDompet();
+
+				renderDompet();
+				if (typeof renderGrupSelisih === 'function') renderGrupSelisih();
+				
+				alert("Hutang berhasil dihapus");
 			}
 		
 		
@@ -1868,7 +2376,31 @@
 				document.getElementById('modal-bank').classList.add('hidden');
 				document.getElementById('bank-nominal').value = "";
 				editBankId = null; // Penting: Reset ID agar tidak tertahan di mode edit
+				
+				if (!modal) return;
+
+				// Tambahkan class animasi keluar (kita buat di CSS bawah)
+				modal.classList.add('animate-scale-out');
+
+				// Tunggu 200ms (durasi animasi) baru sembunyikan total
+				setTimeout(() => {
+					modal.classList.add('hidden');
+					modal.classList.remove('animate-scale-out');
+				}, 200);
 			}
+
+			function validasiBukaModalBank() {
+			// Asumsi Bapak punya input/select untuk nama bank
+			const namaBank = document.getElementById('input-nama-bank').value; 
+
+			const dataAda = dbDompet.bank.find(b => b.nama === namaBank);
+
+			if (dataAda) {
+				alert(`Catatan untuk ${namaBank} sudah dibuat. Silakan klik tombol Edit di daftar aset.`);
+			} else {
+				bukaModalBank(); // Buka modal input bank baru
+			}
+		}
 
 			function simpanBank() {
 				const tgl = document.getElementById('bank-tanggal').value;
@@ -1963,6 +2495,29 @@
 					</div>
 				`).join('');
 			}
+			
+			function hapusBank(id) {
+				// 1. Cari data yang mau dihapus untuk konfirmasi nama bukunya
+				const dataHapus = dbDompet.bank.find(b => Number(b.id) === Number(id));
+				
+				if (!dataHapus) return;
+
+				// 2. Konfirmasi ke user agar tidak tidak sengaja terhapus
+				if (confirm(`Hapus saldo Bank untuk buku "${dataHapus.buku.toUpperCase()}"?`)) {
+					
+					// 3. Filter array bank, sisakan yang ID-nya tidak sama dengan yang dihapus
+					dbDompet.bank = dbDompet.bank.filter(b => Number(b.id) !== Number(id));
+
+					// 4. Simpan ke LocalStorage
+					saveDompet(); 
+
+					// 5. Refresh tampilan list Bank dan Audit
+					renderListBank();
+					renderGrupSelisih(); // Penting: agar selisih di dashboard langsung update
+
+					alert("Saldo bank berhasil dihapus.");
+				}
+			}
 		
 		
 		// --- MANAJEMEN KAS TUNAI (FISIK) v1.15 ---
@@ -1970,11 +2525,87 @@
 				const modal = document.getElementById('modal-tunai');
 				if (!modal) return;
 				
+				// 1. Tampilkan modal tepat di tengah
 				modal.classList.remove('hidden');
-				// Reset form ke nol
+				modal.classList.add('flex'); // WAJIB ADA agar items-center & justify-center jalan
+				
+				// 2. Tambahkan animasi masuk (opsional jika sudah ada di CSS)
+				modal.classList.add('animate-scale-in'); 
+
+				// 3. Reset form ke kondisi awal
 				document.querySelectorAll('.input-pecahan').forEach(input => input.value = "");
 				document.getElementById('total-hitung-fisik').innerText = "Rp 0";
 				document.getElementById('tunai-buku').selectedIndex = 0;
+				
+				// Pastikan kalkulator tersembunyi sampai buku dipilih
+				const listKalkulator = document.getElementById('kalkulator-list');
+				if (listKalkulator) listKalkulator.classList.add('hidden');
+				
+				window.idTerpilihEdit = null;
+				
+				// Bersihkan sisa animasi setelah selesai
+				setTimeout(() => {
+					modal.classList.remove('animate-scale-in');
+				}, 300);
+			}
+			
+			function tutupModalTunai() {
+				const modal = document.getElementById('modal-tunai');
+				const listKalkulator = document.getElementById('kalkulator-list');
+
+				if (modal) {
+					// 1. Jalankan animasi keluar (JANGAN tambahkan 'hidden' dulu di sini)
+					modal.classList.add('animate-scale-out');
+
+					// 2. Tunggu animasi selesai (200ms) baru benar-benar sembunyikan
+					setTimeout(() => {
+						modal.classList.add('hidden');
+						modal.classList.remove('flex'); // Hapus flex agar tidak menutupi layar
+						modal.classList.remove('animate-scale-out');
+						
+						// 3. Reset state di dalam modal
+						if (listKalkulator) listKalkulator.classList.add('hidden');
+						document.getElementById('tunai-buku').selectedIndex = 0;
+						window.idTerpilihEdit = null;
+					}, 200); 
+				}
+			}
+
+
+			function cekDuplikasiBuku(namaBuku) {
+				const listKalkulator = document.getElementById('kalkulator-list');
+				const btnSimpan = document.querySelector("button[onclick='simpanTunai()']"); // Ambil tombol simpan
+				
+				if (!namaBuku) {
+					listKalkulator.classList.add('hidden');
+					return;
+				}
+
+				listKalkulator.classList.remove('hidden');
+				const dataAda = dbDompet.tunai.find(t => t.buku === namaBuku);
+
+				if (dataAda) {
+					const konfirmasi = confirm(`Data saldo fisik untuk "${namaBuku}" sudah ada.\n\nEdit data yang sudah ada?`);
+					if (konfirmasi) {
+						editTunai(dataAda.id);
+						// Teks tombol diubah di dalam fungsi editTunai
+					} else {
+						document.getElementById('tunai-buku').selectedIndex = 0;
+						listKalkulator.classList.add('hidden');
+					}
+				} else {
+					// --- JIKA DATA TIDAK ADA (INPUT BARU) ---
+					window.idTerpilihEdit = null;
+					
+					// KEMBALIKAN TEKS TOMBOL MENJADI SIMPAN
+					if (btnSimpan) {
+						btnSimpan.innerText = "SIMPAN SALDO BARU";
+						btnSimpan.className = "bg-blue-600 text-white py-3 rounded-xl font-bold text-[10px] uppercase shadow-lg shadow-blue-200"; // Warna biru untuk Baru
+					}
+
+					document.querySelectorAll('.input-pecahan').forEach(input => input.value = "");
+					document.getElementById('total-hitung-fisik').innerText = "Rp 0";
+				}
 			}
 
 			function hitungTotalFisik() {
@@ -1996,64 +2627,81 @@
 			}
 
 			function simpanTunai() {
-				const buku = document.getElementById('tunai-buku').value;
-				const tgl = new Date().toLocaleDateString('id-ID'); // Format lokal: 18/04/2026
-				
-				let rincianLembar = {};
-				let total = 0;
-				
-				const inputs = document.querySelectorAll('.input-pecahan');
-				inputs.forEach(input => {
-					const jumlah = parseInt(input.value) || 0;
-					const nilai = input.getAttribute('data-nilai');
-					if (jumlah > 0) {
-						rincianLembar[nilai] = jumlah;
-					}
-					total += (jumlah * parseInt(nilai));
-				});
+				const selectBuku = document.getElementById('tunai-buku');
+				const namaBuku = selectBuku.value;
+				const totalFisik = hitungTotalFisik(); 
 
-				if (total === 0) return alert("⚠️ Hitung dulu uangnya, Pak! Total tidak boleh Rp 0.");
-
-				// Cari index berdasarkan nama BUKU (karena 1 buku hanya boleh punya 1 catatan fisik tunai)
-				const index = dbDompet.tunai.findIndex(t => t.buku === buku);
-
-				const dataBaru = { 
-					id: Date.now(), 
-					tanggal: tgl, 
-					buku: buku, 
-					nominal: total,
-					rincian: rincianLembar 
-				};
-
-				if (index !== -1) {
-					dbDompet.tunai[index] = dataBaru;
-				} else {
-					dbDompet.tunai.push(dataBaru);
+				if (totalFisik <= 0) {
+					alert("Isi dulu jumlah lembar uangnya Pak!");
+					return;
 				}
 
-				saveDompet(); // Update Storage & Dashboard
-				renderListTunai();
+				let rincianBaru = {};
+				document.querySelectorAll('.input-pecahan').forEach(input => {
+					const jumlah = parseInt(input.value) || 0;
+					const nilai = input.getAttribute('data-nilai');
+					if (jumlah > 0) rincianBaru[nilai] = jumlah;
+				});
+
+				// AMBIL DATA TERBARU DARI DB
+				const index = dbDompet.tunai.findIndex(t => t.buku === namaBuku);
+				
+				if (index !== -1) {
+					// Jika sudah ada, UPDATE
+					dbDompet.tunai[index].nominal = totalFisik;
+					dbDompet.tunai[index].rincian = rincianBaru;
+					dbDompet.tunai[index].tanggal = new Date().toLocaleDateString('id-ID');
+				} else {
+					// JIKA BELUM ADA (INI YANG MISS), BUAT BARU (PUSH)
+					dbDompet.tunai.push({
+						id: Date.now(), // ID unik untuk edit/hapus
+						buku: namaBuku,
+						nominal: totalFisik,
+						rincian: rincianBaru,
+						tanggal: new Date().toLocaleDateString('id-ID')
+					});
+				}
+
+				// SIMPAN KE LOCALSTORAGE
+				saveDompet(); 
+				
+				// TUTUP & REFRESH
 				tutupModalTunai();
+				renderListTunai();
+				
+				// Sinkronisasi dashboard jika ada
+				if (typeof renderGrupSelisih === 'function') renderGrupSelisih();
+				if (typeof renderDompet === 'function') renderDompet();
+				
+				alert("✅ Saldo fisik " + namaBuku + " berhasil disimpan!");
 			}
 
 			function renderListTunai() {
 				const container = document.getElementById('list-grup-tunai');
 				if (!container) return;
 
+				// AMBIL DATA TERBARU DARI LOCALSTORAGE SEBELUM RENDER
+				// Ini memastikan data tidak "ketinggalan" dari laci sebelah
+				const dataTerbaru = JSON.parse(localStorage.getItem('kas_saku_dompet')) || { tunai: [], bank: [], hutang: [] };
+				dbDompet = dataTerbaru; // Update variabel global agar sinkron
+
 				if (!dbDompet.tunai || dbDompet.tunai.length === 0) {
 					container.innerHTML = `
-						<div class="py-6 text-center opacity-20">
-							<i class="fas fa-wallet text-xl mb-1"></i>
-							<p class="text-[9px] font-black uppercase italic">Belum ada uang tunai</p>
+						<div class="py-10 text-center opacity-30">
+							<i class="fas fa-wallet text-2xl mb-2 text-gray-400"></i>
+							<p class="text-[10px] font-black uppercase italic text-gray-400 tracking-widest">Belum ada uang tunai</p>
 						</div>`;
 					return;
 				}
 
-				container.innerHTML = dbDompet.tunai.map(t => `
+				// Urutkan berdasarkan tanggal terbaru di atas
+				const dataUrut = [...dbDompet.tunai].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+				container.innerHTML = dataUrut.map(t => `
 					<div class="flex justify-between items-center border-b border-gray-50 p-4 last:border-0 hover:bg-orange-50/30 transition-all">
 						<div class="flex-1">
 							<p class="text-[7px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded inline-block font-black mb-1 uppercase">${t.tanggal}</p>
-							<p class="text-[11px] font-black text-gray-700 uppercase tracking-tight">${t.buku}</p>
+							<p class="text-[11px] font-black text-gray-700 uppercase tracking-tight">${t.buku || 'TANPA KETERANGAN'}</p>
 						</div>
 						<div class="flex items-center gap-2">
 							<div class="text-right mr-2">
@@ -2061,8 +2709,8 @@
 								<p class="text-xs font-black text-orange-600">Rp ${formatRupiah(t.nominal)}</p>
 							</div>
 							<div class="flex gap-1">
-								<button onclick="editTunai('${t.buku}')" title="Hitung Ulang" class="w-8 h-8 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center active:scale-90 transition-all">
-									<i class="fas fa-calculator text-[10px]"></i>
+								<button onclick="editTunai(${t.id})" class="w-8 h-8 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-sm">
+									<i class="fas fa-edit text-[10px]"></i>
 								</button>
 								<button onclick="hapusTunai(${t.id})" class="w-8 h-8 bg-red-50 text-red-400 rounded-xl flex items-center justify-center active:scale-90 transition-all">
 									<i class="fas fa-trash-alt text-[10px]"></i>
@@ -2071,6 +2719,46 @@
 						</div>
 					</div>
 				`).join('');
+			}
+			
+			function editTunai(id) {
+				const data = dbDompet.tunai.find(t => Number(t.id) === Number(id));
+				if (!data) return;
+
+				window.idTerpilihEdit = id; 
+				
+				// UBAH TOMBOL JADI MODE UPDATE (ORANGE)
+				const btnSimpan = document.querySelector("button[onclick='simpanTunai()']");
+				if (btnSimpan) {
+					btnSimpan.innerText = "UPDATE DATA FISIK";
+					btnSimpan.className = "bg-orange-500 text-white py-3 rounded-xl font-bold text-[10px] uppercase shadow-lg shadow-orange-200";
+				}
+
+				document.getElementById('tunai-buku').value = data.buku;
+				document.querySelectorAll('.input-pecahan').forEach(input => {
+					const nilai = input.getAttribute('data-nilai');
+					input.value = data.rincian ? (data.rincian[nilai] || "") : "";
+				});
+
+				hitungTotalFisik();
+			}
+			
+			
+			function hapusTunai(id) {
+				if (!confirm("Hapus data fisik tunai ini?")) return;
+
+				const targetId = Number(id);
+				dbDompet.tunai = dbDompet.tunai.filter(t => Number(t.id) !== targetId);
+				
+				// Simpan & Update UI
+				if (typeof saveDompet === 'function') saveDompet();
+				else if (typeof simpanDompet === 'function') simpanDompet();
+
+				renderListTunai();
+				if (typeof renderGrupSelisih === 'function') renderGrupSelisih();
+				
+				// Jika ada fungsi total aset di dashboard, panggil juga
+				if (typeof renderDompet === 'function') renderDompet();
 			}
 		
 		
@@ -2257,10 +2945,10 @@
 					return;
 				}
 
-				// 2. Header Pesan (v1.15 Style)
+				// 2. Header Pesan (v1.15.17 Style)
 				let pesan = `*[ LAPORAN KAS ${buku} ]*\n`;
-				pesan += `*PERIODE: ${periode}*\n`;
-				pesan += `============================\n\n`;
+				pesan += `*PERIODE: ${periode}*\n\n`;
+				pesan += `========== RINCIAN KAS ==========\n\n`;
 
 				let totalMasuk = 0;
 				let totalKeluar = 0;
@@ -2270,34 +2958,26 @@
 
 				// 4. Susun Rincian Per Transaksi
 				itemsArray.forEach((item, index) => {
-					const spans = item.querySelectorAll('span');
-					const pTags = item.querySelectorAll('p');
-					
-					const tgl = spans[0].innerText.trim();
-					const tipe = spans[1].innerText.trim().toUpperCase();
-					const ket = pTags[0].innerText.trim().toUpperCase(); 
-					const nominalTeks = pTags[1].innerText.trim();
-					
-					// Membersihkan angka secara total agar aman masuk perhitungan
-					const nominalAngka = parseInt(nominalTeks.replace(/[^0-9]/g, '')) || 0;
+					const tgl = item.querySelector('span').innerText;
+					const tipe = item.querySelectorAll('span')[1].innerText.toUpperCase();
+					const ket = item.querySelector('p').innerText.toUpperCase(); // Keterangan Kapital
+					const nominalTeks = item.querySelectorAll('p')[1].innerText;
+					const nominalAngka = parseInt(nominalTeks.replace(/[^0-9]/g, ''));
 
-					if (tipe === 'MASUK') {
-						totalMasuk += nominalAngka;
-					} else {
-						totalKeluar += nominalAngka;
-					}
+					if (tipe === 'MASUK') totalMasuk += nominalAngka;
+					else totalKeluar += nominalAngka;
 
 					pesan += `${index + 1}. *[${tgl}]* ${ket}\n`;
-					pesan += `   _(${tipe}: ${nominalTeks})_\n\n`;
+					pesan += `    *${tipe}* : *${nominalTeks}*\n\n`;
 				});
 
 				// 5. Ringkasan Akhir
-				const saldoAkhir = totalMasuk - totalKeluar;
-				pesan += `============================\n`;
-				pesan += `*TOTAL MASUK  : Rp ${formatRupiah(totalMasuk)}*\n`;
+				pesan += `--------------------------------\n`;
+				pesan += `*RINGKASAN :*\n`;
+				pesan += `*TOTAL MASUK : Rp ${formatRupiah(totalMasuk)}*\n`;
 				pesan += `*TOTAL KELUAR : Rp ${formatRupiah(totalKeluar)}*\n`;
-				pesan += `*SALDO AKHIR  : Rp ${formatRupiah(saldoAkhir)}*\n\n`;
-				pesan += `_Laporan otomatis via Aplikasi Kas Saku_`;
+				pesan += `*SALDO AKHIR : Rp ${formatRupiah(totalMasuk - totalKeluar)}*\n\n`;
+				pesan += `_Laporan dicatat via Aplikasi Kas Saku v1.15.17_\n\n`;
 
 				// 6. Kirim ke WA (Gunakan window.open agar lebih stabil di Mobile)
 				const urlWA = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
@@ -2313,26 +2993,24 @@
 			// Fungsi Eksport Database
 			function eksporDatabase() {
 				try {
-					// 1. Kumpulkan semua data dari "Laci" aplikasi
-					const dataLengkap = {
+					const backupData = {
 						metadata: {
-							nama_aplikasi: "KAS SAKU",
-							versi: "v1.10",
-							buku_saat_ini: bukuAktif,
-							waktu_backup: new Date().toLocaleString('id-ID')
+							aplikasi: "Kas Saku",
+							versi: "v1.15.17",
+							waktu: new Date().toLocaleString('id-ID')
 						},
-						data: {
-							anggota: (typeof dbAnggota !== 'undefined') ? dbAnggota : [],
-							transaksi: (typeof dbTransaksi !== 'undefined') ? dbTransaksi : [],
-							jimpitan: (typeof dbJimpitan !== 'undefined') ? dbJimpitan : [],
-							saldo_awal: (typeof dbSaldoAwal !== 'undefined') ? dbSaldoAwal : [], // << PENTING: Untuk data Tutup Buku
-							dompet: (typeof dbDompet !== 'undefined') ? dbDompet : { hutang: [], bank: [], tunai: [] },
-							periode: (typeof periodeAktif !== 'undefined') ? periodeAktif : {}
+						// Mengambil dari variabel global yang Bapak pakai di saveAllData
+						konten: {
+							transaksi: dbTransaksi,
+							anggota: dbAnggota,
+							jimpitan: dbJimpitan,
+							dompet: dbDompet,
+							saldoAwal: dbSaldoAwal
 						}
 					};
 
-					const dataStr = JSON.stringify(dataLengkap, null, 2);
-					const blob = new Blob([dataStr], { type: "application/json" }); 
+					const dataStr = JSON.stringify(backupData, null, 2);
+					const blob = new Blob([dataStr], { type: "application/json" });
 					const url = URL.createObjectURL(blob);
 					
 					// 2. Buat Nama File Dinamis (Contoh: BACKUP_KAS_2026-04-18.json)
@@ -2351,10 +3029,10 @@
 						document.body.removeChild(link);
 						window.URL.revokeObjectURL(url);
 					}, 200);
-
-					alert("🛡️ Backup Berhasil!\nSimpan file " + namaFile + " ini baik-baik.");
+					
+					alert("🛡️ Backup Berhasil Disimpan!");
 				} catch (e) {
-					alert("❌ Gagal ekspor: " + e.message);
+					alert("Gagal Ekspor: " + e.message);
 				}
 			}
 	
@@ -2367,104 +3045,123 @@
 				reader.onload = function(e) {
 					try {
 						const json = JSON.parse(e.target.result);
-						const dataImpor = json.data || json; // Support format lama & baru
+						const d = json.konten || json; // Support format baru maupun lama
 
-						if (dataImpor.transaksi || dataImpor.anggota) {
-							if (confirm("Ingin menimpa data saat ini dengan data backup?")) {
-								
-								// 1. Ambil data dengan nilai default jika kosong
-								const dbTransaksi = dataImpor.transaksi || [];
-								const dbAnggota = dataImpor.anggota || [];
-								const dbDompet = dataImpor.dompet || { hutang: [], bank: [], tunai: [] };
-								const dbJimpitan = dataImpor.jimpitan || [];
-								const dbSaldoAwal = dataImpor.saldo_awal || [];
-								const periode = dataImpor.periode || { bulan: new Date().getMonth() + 1, tahun: new Date().getFullYear() };
+						if (confirm("Timpa seluruh data aplikasi dengan data dari file backup ini?")) {
+							// 1. Update Variabel Global
+							dbTransaksi = d.transaksi || [];
+							dbAnggota = d.anggota || [];
+							dbJimpitan = d.jimpitan || [];
+							dbDompet = d.dompet || { tunai: [], bank: [], hutang: [] };
+							dbSaldoAwal = d.saldoAwal || [];
 
-								// 2. SIMPAN KE LOCALSTORAGE (Gunakan Nama Laci yang Sama)
-								localStorage.setItem('dbTransaksi', JSON.stringify(dbTransaksi));
-								localStorage.setItem('dbAnggota', JSON.stringify(dbAnggota));
-								localStorage.setItem('dbJimpitan', JSON.stringify(dbJimpitan));
-								localStorage.setItem('dbDompet', JSON.stringify(dbDompet));
-								localStorage.setItem('dbSaldoAwal', JSON.stringify(dbSaldoAwal));
-								localStorage.setItem('periodeAktif', JSON.stringify(periode));
+							// 2. Simpan ke Laci Utama (kas_saku_data)
+							saveAllData();
 
-								alert("✅ IMPORT BERHASIL!");
-								location.reload();
-							}
-						} else {
-							alert("Format file backup tidak dikenali!");
+							// 3. Simpan juga ke laci dompet (karena dbDompet punya laci sendiri di kode Bapak)
+							localStorage.setItem('kas_saku_dompet', JSON.stringify(dbDompet));
+
+							alert("✅ Impor Berhasil! Aplikasi akan memuat ulang.");
+							location.reload();
 						}
 					} catch (err) {
-						alert("Gagal membaca file: " + err.message);
+						alert("Format file backup tidak dikenali!");
 					}
 				};
 				reader.readAsText(file);
-				event.target.value = ''; 
 			}
 			
 			// Fungsi Hapus Database Pilihan
 			function bukaModalHapusPilihan() {
 				const container = document.getElementById('daftar-db-hapus');
-				if (!container) return;
-
-				// Daftar kategori data yang bisa dihapus secara mandiri
-				const opsiData = [
-					{ id: 'transaksi', nama: 'Data Transaksi Kas', icon: 'fa-exchange-alt' },
-					{ id: 'anggota', nama: 'Daftar Anggota Ziarah', icon: 'fa-users' },
-					{ id: 'jimpitan', nama: 'Riwayat Jimpitan', icon: 'fa-coins' },
-					{ id: 'dompet', nama: 'Data Dompet & Hutang', icon: 'fa-wallet' },
-					{ id: 'saldo_awal', nama: 'Saldo Awal (Tutup Buku)', icon: 'fa-history' }
+				const listDB = [
+					{ id: 'transaksi_lingkungan', label: 'Kas Lingkungan (Transaksi)' },
+					{ id: 'transaksi_mushola', label: 'Kas Mushola (Transaksi)' },
+					{ id: 'transaksi_ziarah', label: 'Tab. Ziarah (Transaksi)' },
+					{ id: 'dbDompet_hutang', label: 'Database Grup Hutang' },
+					{ id: 'dbDompet_bank', label: 'Database Grup Bank' },
+					{ id: 'dbDompet_tunai', label: 'Database Grup Tunai' },					
+					{ id: 'kas_saku_fisik', label: 'Data Saldo Fisik' },
+					{ id: 'dbAnggota', label: 'Daftar Anggota/Warga' },
+					{ id: 'kas_saku', label: 'Hapus Semua Data Sekaligus' }
 				];
 
-				container.innerHTML = opsiData.map(item => `
-					<label class="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer active:bg-red-50 transition-colors border border-transparent hover:border-red-100">
-						<div class="flex items-center gap-3">
-							<i class="fas ${item.icon} text-gray-400 w-5"></i>
-							<span class="text-[11px] font-black text-gray-600 uppercase tracking-tighter">${item.nama}</span>
-						</div>
-						<input type="checkbox" name="hapus-db" value="${item.id}" class="w-4 h-4 accent-red-600 rounded">
+				container.innerHTML = listDB.map(db => `
+					<label class="flex items-center p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-red-50 transition-all border border-transparent">
+						<input type="checkbox" name="db-pilihan" value="${db.id}" class="w-4 h-4 rounded text-red-600 focus:ring-red-500">
+						<span class="ml-3 text-[11px] font-black text-gray-700 uppercase">${db.label}</span>
 					</label>
 				`).join('');
-
+		
 				document.getElementById('modal-hapus-pilihan').classList.remove('hidden');
 			}
 
 			function tutupModalHapusPilihan() {
-				const modal = document.getElementById('modal-hapus-pilihan');
-				if (modal) modal.classList.add('hidden');
+				document.getElementById('modal-hapus-pilihan').classList.add('hidden');
+
+				// Jalankan animasi keluar
+				content.classList.remove('animate-scale-in', 'animate-slide-up');
+				content.classList.add('animate-scale-out');
+
+				// Tunggu animasi selesai (0.2 detik sesuai CSS Bapak) baru sembunyikan
+				setTimeout(() => {
+					modal.classList.add('hidden');
+					content.classList.remove('animate-scale-out');
+				}, 180);
 			}
 
 			function eksekusiHapusTerpilih() {
-				const terpilih = document.querySelectorAll('input[name="hapus-db"]:checked');
-				
-				if (terpilih.length === 0) {
-					alert("Pilih minimal satu data yang ingin dihapus, Pak!");
-					return;
-				}
+				const terpilih = document.querySelectorAll('input[name="db-pilihan"]:checked');
+				if (terpilih.length === 0) return alert("Pilih kategori yang ingin dihapus!");
 
-				const konfirmasi = confirm(`⚠️ PERINGATAN!\nAnda akan menghapus ${terpilih.length} kategori data secara permanen.\n\nTindakan ini tidak bisa dibatalkan. Lanjutkan?`);
-				
-				if (konfirmasi) {
+				if (confirm(`Hapus ${terpilih.length} kategori data terpilih secara permanen?`)) {
+					
 					terpilih.forEach(item => {
-						const key = item.value;
+						const kategori = item.value;
+
+						// Logika Filter untuk Transaksi
+						if (kategori === 'transaksi_lingkungan') {
+							dbTransaksi = dbTransaksi.filter(t => t.buku !== 'lingkungan');
+						} else if (kategori === 'transaksi_mushola') {
+							dbTransaksi = dbTransaksi.filter(t => t.buku !== 'mushola');
+						} else if (kategori === 'transaksi_ziarah') {
+							dbTransaksi = dbTransaksi.filter(t => t.buku !== 'ziarah');
+						}
 						
-						// Eksekusi pembersihan variabel global
-						if (key === 'transaksi') dbTransaksi = [];
-						if (key === 'anggota') dbAnggota = [];
-						if (key === 'jimpitan') dbJimpitan = [];
-						if (key === 'dompet') dbDompet = { bank: [], tunai: [], hutang: [] };
-						if (key === 'saldo_awal') dbSaldoAwal = [];
+						// Logika Kosongkan Array
+						else if (kategori === 'dbAnggota') {
+							dbAnggota = [];
+						} 
+						else if (kategori === 'dbDompet_bank') {
+							dbDompet.bank = [];
+						} 
+						else if (kategori === 'dbDompet_tunai') {
+							dbDompet.tunai = [];
+						} 
+						else if (kategori === 'dbDompet_hutang') {
+							dbDompet.hutang = [];
+						} 
+						else if (kategori === 'kas_saku_fisik') {
+							dbJimpitan = [];
+							localStorage.removeItem('kas_saku_fisik');
+						}
+						
+						// Logika Reset Total
+						else if (kategori === 'kas_saku') {
+							localStorage.clear();
+							location.reload();
+							return;
+						}
 					});
 
-					// 1. Simpan perubahan ke LocalStorage (Satu Laci)
-					saveAllData(); 
+					// SIMPAN PERUBAHAN KE LACI UTAMA
+					saveAllData();
 					
-					// 2. Tutup Modal
-					tutupModalHapusPilihan();
+					// Simpan juga ke laci dompet khusus
+					localStorage.setItem('kas_saku_dompet', JSON.stringify(dbDompet));
 
-					// 3. Notifikasi & Refresh
-					alert("✅ Data terpilih berhasil dibersihkan dari memori.");
-					location.reload(); 
+					alert("🗑️ Data terpilih berhasil dihapus!");
+					location.reload(); // Refresh agar UI bersih total
 				}
 			}
 	
@@ -2522,9 +3219,9 @@
 			}
 
 			async function importKontak() {
-				// Fitur canggih untuk HP Android/iOS
-				if (!('contacts' in navigator)) {
-					alert("Browser tidak mendukung import kontak. Isi manual ya, Pak.");
+				// Cek apakah fitur didukung oleh browser/pembungkus APK
+				if (!('contacts' in navigator) || !('select' in navigator.contacts)) {
+					alert("Maaf Pak, fitur Import Kontak tidak didukung oleh versi APK ini. Silakan isi manual atau gunakan versi Web di Chrome.");
 					return;
 				}
 
@@ -2532,17 +3229,22 @@
 					const props = ['name', 'tel'];
 					const contacts = await navigator.contacts.select(props, { multiple: false });
 					
-					if (contacts.length > 0) {
+					if (contacts && contacts.length > 0) {
 						const kontak = contacts[0];
-						const nama = kontak.name[0];
-						const telp = kontak.tel ? kontak.tel[0] : "";
+						const nama = (kontak.name && kontak.name[0]) ? kontak.name[0] : "";
+						const telp = (kontak.tel && kontak.tel[0]) ? kontak.tel[0] : "";
 
 						document.getElementById('input-nama-anggota').value = nama.toUpperCase();
 						document.getElementById('input-wa-anggota').value = bersihkanNomorWA(telp);
-						document.getElementById('input-nama-anggota').focus();
+						
+						// Tambahkan animasi saat berhasil isi
+						const inputNama = document.getElementById('input-nama-anggota');
+						inputNama.focus();
+						inputNama.classList.add('animate-scale-in');
+						setTimeout(() => inputNama.classList.remove('animate-scale-in'), 500);
 					}
 				} catch (ex) {
-					console.log("Import dibatalkan");
+					console.log("Import dibatalkan atau diblokir sistem");
 				}
 			}
 
@@ -2658,7 +3360,7 @@
 				<h3 class="font-bold text-gray-700 mb-4 text-center text-xs uppercase tracking-widest">Pilih Periode Laporan</h3>
 				
 				<div class="grid grid-cols-2 gap-3 mb-6">
-					<div class="flex flex-col gap-1">
+					<div id="area-header-bulan" class="flex flex-col gap-1">
 						<label class="text-[9px] font-bold text-gray-400 ml-1">BULAN</label>
 						<select id="pilih-bulan" class="w-full p-3 rounded-xl border-2 border-gray-100 font-bold text-gray-700 bg-gray-50 focus:border-blue-500 outline-none transition-all text-sm">
 							<option value="1">JANUARI</option><option value="2">FEBRUARI</option>
@@ -2697,7 +3399,6 @@
 					<h3 id="modal-title" class="font-black uppercase text-xs tracking-widest flex items-center">
 						<i class="fas fa-edit mr-2"></i> Tambah Transaksi
 					</h3>
-					<p class="text-[9px] opacity-80 font-bold uppercase">Input Data Kas WH-2</p>
 				</div>
 				<button onclick="tutupModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-all">
 					<i class="fas fa-times"></i>
@@ -2721,22 +3422,42 @@
 						<select id="select-anggota" class="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold mt-1 outline-none"></select>
 					</div>
 
-					<div id="area-keterangan-umum">
-						<div id="template-mushola-area" class="hidden mb-3">
-							<label class="text-[9px] font-black text-gray-400 uppercase ml-1 block mb-2">Shortcut Mushola</label>
+					<div id="template-mushola-area" class="hidden">
+						<label class="text-[9px] font-black text-gray-400 uppercase ml-1 block mb-2">Shortcut Mushola</label>
+						<div id="group-masuk-mushola" class="mb-3 hidden">
 							<div class="flex flex-wrap gap-2">
-								<button type="button" onclick="setTemplate('SALDO AWAL')" class="text-[9px] bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg font-bold border border-blue-100 uppercase">Saldo</button>
-								<button type="button" onclick="setTemplate('WARGA RT 04')" class="text-[9px] bg-green-50 text-green-600 px-3 py-1.5 rounded-lg font-bold border border-green-100 uppercase">RT 04</button>
-								<button type="button" onclick="setTemplate('AMAL JARIYAH')" class="text-[9px] bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg font-bold border border-orange-100 uppercase">Amal</button>
+								<button type="button" onclick="setTemplateMushola('WARGA')" class="text-[9px] bg-green-50 text-green-600 px-3 py-2 rounded-lg font-bold border border-green-100 uppercase">AMAL WARGA</button>
+								<button type="button" onclick="setTemplateMushola('AMAL')" class="text-[9px] bg-green-50 text-green-600 px-3 py-2 rounded-lg font-bold border border-green-100 uppercase">AMAL (NAMA)</button>
 							</div>
 						</div>
 
+						<div id="group-keluar-mushola" class="mb-3 hidden">
+							<div class="flex flex-wrap gap-2">
+								<button type="button" onclick="setTemplateMushola('BELI')" class="text-[9px] bg-red-50 text-red-600 px-3 py-2 rounded-lg font-bold border border-red-100 uppercase">BELI</button>
+								<button type="button" onclick="setTemplateMushola('KEGIATAN')" class="text-[9px] bg-red-50 text-red-600 px-3 py-2 rounded-lg font-bold border border-red-100 uppercase">KEGIATAN</button>
+							</div>
+						</div>
+					</div>
+
 						<div id="template-lingkungan-area" class="hidden mb-3">
 							<label class="text-[9px] font-black text-gray-400 uppercase ml-1 block mb-2">Shortcut Lingkungan</label>
-							<div class="flex flex-wrap gap-2">
-								<button onclick="setTemplate('SALDO AWAL')" class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-[9px] font-bold border border-blue-100 uppercase">Saldo</button>
-								<button onclick="setTemplate('BELI ')" class="bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg text-[9px] font-bold border border-orange-100 uppercase">Beli</button>
-								<button onclick="setTemplate('PEMBAYARAN PAM')" class="bg-cyan-50 text-cyan-600 px-3 py-1.5 rounded-lg text-[9px] font-bold border border-cyan-100 uppercase">PAM</button>
+							
+							<div id="group-masuk-lingkungan" class="flex flex-wrap gap-2 hidden">
+								<button type="button" onclick="bukaModalJimpitan()" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase active:scale-95 transition-all">
+									<i class="fas fa-coins mr-1"></i> Input Jimpitan Harian
+								</button>
+							</div>
+
+							<div id="group-keluar-lingkungan" class="flex flex-wrap gap-2 hidden">
+								<button type="button" onclick="setTemplateLingkungan('BELI')" class="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase active:scale-95 transition-all">
+									<i class="fas fa-shopping-cart mr-1"></i> Beli..
+								</button>
+								<button type="button" onclick="setTemplateLingkungan('KEGIATAN')" class="bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase active:scale-95 transition-all">
+									<i class="fas fa-users mr-1"></i> Kegiatan..
+								</button>
+								<button type="button" onclick="setTemplateLingkungan('PAM')" class="bg-cyan-100 text-cyan-700 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase active:scale-95 transition-all">
+									<i class="fas fa-tint mr-1"></i> PAM
+								</button>
 							</div>
 						</div>
 						
@@ -2761,10 +3482,6 @@
 				<div class="pt-2 space-y-3">
 					<button onclick="simpanTransaksi()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase shadow-lg shadow-blue-200 active:scale-95 transition-all">
 						SIMPAN TRANSAKSI
-					</button>
-				
-					<button id="btn-wa-ziarah" onclick="simpanDanKirimWA()" class="hidden w-full py-4 bg-green-600 text-white rounded-2xl text-xs font-black uppercase shadow-lg shadow-green-200 flex items-center justify-center active:scale-95 transition-all">
-						<i class="fab fa-whatsapp mr-2 text-lg"></i> SIMPAN & KIRIM WA
 					</button>
 				</div>
 			</div>
@@ -2831,43 +3548,7 @@
 
 
 
-	<div id="modal-jimpitan" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
-		<div class="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl flex flex-col animate-scale-in">
-			
-			<div class="flex justify-between items-center mb-4 border-b pb-3">
-				<div>
-					<h3 class="font-black text-gray-700 text-xs uppercase tracking-widest flex items-center">
-						<i class="fas fa-coins mr-2 text-orange-500"></i> Jimpitan Harian
-					</h3>
-					<p class="text-[9px] text-gray-400 font-bold italic" id="label-bulan-jimpitan">Rincian Per Tanggal</p>
-				</div>
-				<button onclick="tutupModalJimpitan()" class="w-8 h-8 flex items-center justify-center bg-gray-50 text-gray-400 rounded-full active:scale-90">
-					<i class="fas fa-times"></i>
-				</button>
-			</div>
-
-			<div id="list-jimpitan-harian" class="flex-1 overflow-y-auto pr-1 min-h-[300px] max-h-[55vh]">
-				</div>
-
-			<div class="mt-4 pt-4 border-t-2 border-dashed border-gray-100">
-				<div class="flex justify-between items-end mb-4 px-1">
-					<span class="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Total Terkumpul:</span>
-					<span id="total-jimpitan-label" class="text-xl font-black text-orange-600 tracking-tighter">Rp 0</span>
-				</div>
-				
-				<div class="flex gap-2">
-					<button id="btn-hapus-jimpitan" onclick="hapusTotalJimpitan()" class="hidden bg-red-50 text-red-600 px-5 py-3 rounded-2xl font-bold border border-red-100 active:scale-95 transition-all">
-						<i class="fas fa-trash-alt"></i>
-					</button>
-					
-					<button onclick="pindahkanKeNominalUtama()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-orange-100 text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center">
-						<i class="fas fa-check-circle mr-2 text-sm"></i>
-						<span id="btn-teks-jimpitan">MASUKKAN KE NOMINAL UTAMA</span>
-					</button>
-				</div>
-			</div>
-		</div>
-	</div>
+	
 
 	<div id="modal-menu-dompet" class="hidden fixed inset-0 bg-black/60 z-[300] flex items-end justify-center p-4">
 		<div class="bg-white w-full max-w-sm rounded-t-3xl p-6 animate-slide-up">
@@ -2908,7 +3589,7 @@
 				</button>
 			</div>
 			
-			<button onclick="tutupMenuDompet()" class="w-full py-3 text-gray-400 font-bold text-[10px] uppercase tracking-widest">Tutup Menu</button>
+			<button onclick="tutupMenuDompet()" class="w-full py-3 bg-gray-100 rounded-2xl border border-gray-100 text-gray-900 font-bold text-[15px] uppercase tracking-widest">Tutup Menu</button>
 		</div>
 	</div>
 
@@ -2933,9 +3614,9 @@
 				<div>
 					<label class="text-[10px] font-bold text-gray-400 uppercase">Pilih Sumber Buku</label>
 					<select id="hutang-buku" class="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold mt-1 uppercase">
-						<option value="lingkungan">KAS LINGKUNGAN</option>
-						<option value="mushola">KAS MUSHOLA</option>
-						<option value="ziarah">TABUNGAN ZIARAH</option>
+						<option value="lingkungan">KAS LINGKUNGAN (PINJAM)</option>
+						<option value="mushola">KAS MUSHOLA (PINJAM)</option>
+						<option value="ziarah">TABUNGAN ZIARAH (PINJAM)</option>
 					</select>
 				</div>
 				<div>
@@ -2954,9 +3635,9 @@
 				<button onclick="simpanHutang()" class="bg-blue-600 text-white py-3 rounded-xl font-bold text-[10px] uppercase shadow-lg shadow-blue-200">Simpan</button>
 			</div>
 		</div>
-		</div>
+	</div>
 		
-		<div id="modal-bayar-hutang" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[350] flex items-center justify-center p-4">
+	<div id="modal-bayar-hutang" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[350] flex items-center justify-center p-4">
 		<div class="bg-white w-full max-w-xs rounded-2xl p-5 shadow-2xl">
 			<div class="flex justify-between items-center mb-4 border-b pb-2">
 				<h3 class="font-black text-gray-700 text-xs uppercase"><i class="fas fa-hand-holding-dollar mr-2 text-green-600"></i>Pelunasan Pinjaman</h3>
@@ -2964,28 +3645,43 @@
 			</div>
 			
 			<div class="space-y-3">
-				<div class="bg-blue-50 p-3 rounded-xl">
+				<div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
 					<p id="bayar-info-nama" class="text-xs font-black text-blue-700 uppercase"></p>
-					<p id="bayar-info-total" class="text-[10px] font-bold text-blue-500"></p>
+					<p id="bayar-info-buku" class="text-[9px] font-bold text-blue-600 mt-1 italic uppercase"></p> 
+					<p id="bayar-info-total" class="text-[10px] font-bold text-blue-500 mt-0.5"></p>
+				</div>
+
+				<div>
+					<label class="text-[10px] font-bold text-gray-400 uppercase">Uang Masuk Ke:</label>
+					<div class="grid grid-cols-2 gap-2 mt-1">
+						<label class="cursor-pointer">
+							<input type="radio" name="tujuan-bayar" value="tunai" class="hidden peer" checked>
+							<div class="text-center p-2 rounded-xl border-2 border-gray-100 peer-checked:border-orange-500 peer-checked:bg-orange-50 text-[10px] font-bold text-gray-500 peer-checked:text-orange-600 uppercase transition-all">
+								<i class="fas fa-wallet mb-1 block"></i> Tunai
+							</div>
+						</label>
+						<label class="cursor-pointer">
+							<input type="radio" name="tujuan-bayar" value="bank" class="hidden peer">
+							<div class="text-center p-2 rounded-xl border-2 border-gray-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 text-[10px] font-bold text-gray-500 peer-checked:text-blue-600 uppercase transition-all">
+								<i class="fas fa-university mb-1 block"></i> Bank
+							</div>
+						</label>
+					</div>
 				</div>
 
 				<div>
 					<label class="text-[10px] font-bold text-gray-400 uppercase">Jumlah yang Dibayar</label>
-					<input type="text" 
-						   id="bayar-nominal" 
-						   inputmode="numeric" 
-						   onkeyup="formatInputRupiah(this)" 
-						   placeholder="0" 
-						   class="w-full bg-gray-50 border-none rounded-xl p-3 text-lg font-black text-green-600 mt-1">
+					<input type="text" id="bayar-nominal" inputmode="numeric" onkeyup="formatInputRupiah(this)" placeholder="0" class="w-full bg-gray-50 border-none rounded-xl p-3 text-lg font-black text-green-600 mt-1">
 				</div>
 			</div>
 
 			<div class="mt-5 grid grid-cols-2 gap-3">
 				<button onclick="tutupModalBayar()" class="bg-gray-100 text-gray-500 py-3 rounded-xl font-bold text-[10px] uppercase">Batal</button>
-				<button onclick="prosesBayarHutang()" class="bg-green-600 text-white py-3 rounded-xl font-bold text-[10px] uppercase shadow-lg">Konfirmasi</button>
+				<button onclick="prosesBayarHutang()" class="bg-green-600 text-white py-3 rounded-xl font-bold text-[10px] uppercase shadow-lg">Bayar</button>
 			</div>
 		</div>
 	</div>
+
 
 	<div id="modal-bank" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[300] flex items-center justify-center p-4">
 		<div class="bg-white w-full max-w-xs rounded-2xl p-5 shadow-2xl">
@@ -3025,7 +3721,7 @@
 		</div>
 	</div>
 	
-	<div id="modal-tunai" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[400] flex items-center justify-center p-4">
+	<div id="modal-tunai" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[400] items-center justify-center p-4">
 		<div class="bg-white w-full max-w-xs rounded-2xl p-5 shadow-2xl flex flex-col max-h-[90vh]">
 			<div class="flex justify-between items-center mb-4 border-b pb-2">
 				<h3 class="font-black text-gray-700 text-xs uppercase"><i class="fas fa-calculator mr-2 text-orange-500"></i>Kalkulator Fisik</h3>
@@ -3033,15 +3729,16 @@
 			</div>
 			
 			<div class="mb-4">
-				<label class="text-[10px] font-bold text-gray-400 uppercase">Pilih Kas Tunai</label>
-					<select id="tunai-buku" class="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold mt-1 uppercase">
-						<option value="KAS LINGKUNGAN (TUNAI)">KAS LINGKUNGAN (TUNAI)</option>
-						<option value="KAS MUSHOLA (TUNAI)">KAS MUSHOLA (TUNAI)</option>
-						<option value="TABUNGAN ZIARAH (TUNAI)">TABUNGAN ZIARAH (TUNAI)</option>
-					</select>
+				<label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Pilih Kas Tunai</label>
+				<select id="tunai-buku" onchange="cekDuplikasiBuku(this.value)" class="w-full bg-gray-50 border-none rounded-xl p-3 text-sm font-bold uppercase outline-none focus:ring-2 focus:ring-orange-500">
+					<option value="" disabled selected>-- PILIH KAS --</option>
+					<option value="KAS LINGKUNGAN (TUNAI)">KAS LINGKUNGAN (TUNAI)</option>
+					<option value="KAS MUSHOLA (TUNAI)">KAS MUSHOLA (TUNAI)</option>
+					<option value="TABUNGAN ZIARAH (TUNAI)">TABUNGAN ZIARAH (TUNAI)</option>
+				</select>
 			</div>
-			
-			<div class="flex-1 overflow-y-auto space-y-3 pr-2" id="kalkulator-list">
+
+			<div class="flex-1 overflow-y-auto space-y-3 pr-2 hidden" id="kalkulator-list">
 				<script>
 					const pecahan = [100000, 50000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100];
 					pecahan.forEach(p => {
@@ -3062,13 +3759,13 @@
 			</div>
 
 			<div class="mt-4 pt-4 border-t">
-				<div class="flex justify-between items-center mb-4">
+				<div class="justify-between items-center mb-4">
 					<span class="text-[10px] font-black text-gray-400 uppercase">Total Fisik:</span>
 					<span id="total-hitung-fisik" class="text-lg font-black text-orange-600">Rp 0</span>
 				</div>
 				<div class="grid grid-cols-2 gap-3">
 					<button onclick="tutupModalTunai()" class="bg-gray-100 text-gray-500 py-3 rounded-xl font-bold text-[10px] uppercase">Batal</button>
-					<button onclick="simpanTunai()" class="bg-orange-500 text-white py-3 rounded-xl font-bold text-[10px] uppercase shadow-lg shadow-orange-200">Update Saldo</button>
+					<button onclick="simpanTunai()" class="bg-orange-500 text-white py-3 rounded-xl font-bold text-[10px] uppercase shadow-lg shadow-orange-200">Simpan Tunai</button>
 				</div>
 			</div>
 		</div>
@@ -3098,11 +3795,73 @@
 
 				<div class="flex gap-2 w-full sm:w-auto">
 					<button onclick="kirimLaporanWA()" class="flex-1 sm:flex-none bg-green-600 text-white px-4 py-2.5 rounded-xl font-black text-[10px] uppercase flex items-center justify-center active:scale-95 transition-all">
-						<i class="fab fa-whatsapp mr-2 text-sm"></i> Kirim WA
+						<i class="fab fa-whatsapp mr-2 text-sm"></i> Kirim Laporan
 					</button>
 
 					<button onclick="tutupModalRincian()" class="flex-1 sm:flex-none bg-gray-100 text-gray-600 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase active:scale-95 transition-all">
-						Tutup
+						Tutup Laporan
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+
+	<div id="modal-hapus-pilihan" class="fixed inset-0 bg-black/50 hidden z-[100] flex items-center justify-center p-4">
+			<div class="bg-white rounded-3xl w-full max-w-xs overflow-hidden shadow-2xl animate-scale-in">
+				<div class="bg-red-600 p-4 text-white">
+					<h3 class="font-black uppercase text-xs tracking-widest flex items-center">
+						<i class="fas fa-trash-alt mr-2"></i> Pilih Database
+					</h3>
+					<p class="text-[10px] opacity-80 font-bold italic">Centang data yang ingin dihapus permanen</p>
+				</div>
+        
+				<div class="p-4 space-y-2">
+					<div id="daftar-db-hapus" class="space-y-1">
+						</div>
+
+					<div class="flex gap-2 pt-4">
+						<button onclick="tutupModalHapusPilihan()" class="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[10px] uppercase">Batal</button>
+						<button onclick="eksekusiHapusTerpilih()" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-[10px] uppercase shadow-lg shadow-red-200">Hapus Terpilih</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	
+	
+	
+	<div id="modal-jimpitan" class="hidden fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4">
+		<div class="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl animate-slide-up">
+			
+			<div class="flex justify-between items-center mb-4 border-b pb-3">
+				<div>
+					<h3 class="font-black text-gray-700 text-xs uppercase tracking-widest flex items-center">
+						<i class="fas fa-coins mr-2 text-orange-500"></i> Jimpitan Harian
+					</h3>
+					<p class="text-[9px] text-gray-400 font-bold italic" id="label-bulan-jimpitan">Rincian Per Tanggal</p>
+				</div>
+				<button onclick="tutupModalJimpitan()" class="w-8 h-8 flex items-center justify-center bg-gray-50 text-gray-400 rounded-full active:scale-90">
+					<i class="fas fa-times"></i>
+				</button>
+			</div>
+
+			<div id="list-jimpitan-harian" class="flex-1 overflow-y-auto pr-1 min-h-[300px] max-h-[55vh]">
+				</div>
+
+			<div class="mt-4 pt-4 border-t-2 border-dashed border-gray-100">
+				<div class="flex justify-between items-end mb-4 px-1">
+					<span class="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Total Terkumpul:</span>
+					<span id="total-jimpitan-label" class="text-xl font-black text-orange-600 tracking-tighter italic">Rp 0</span>
+				</div>
+				
+				<div class="flex gap-2">
+					<button id="btn-hapus-jimpitan" onclick="hapusTotalJimpitan()" class="hidden bg-red-100 text-red-600 px-5 py-4 rounded-2xl font-bold active:scale-95 transition-all">
+						<i class="fas fa-trash-alt"></i>
+					</button>
+					
+					<button onclick="pindahkanKeNominalUtama()" class="flex-1 bg-orange-500 text-white py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-orange-200 active:scale-95 transition-all flex items-center justify-center border-none">
+						<i class="fas fa-arrow-right mr-2"></i> Simpan Jimpitan Terkumpul
 					</button>
 				</div>
 			</div>
@@ -3112,60 +3871,34 @@
 
 
 
-
-
-
-
-
-
-	<div id="modal-kelola-db" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-6">
-		<div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
-			<div class="text-center mb-6">
-				<div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-					<i class="fas fa-exclamation-triangle text-2xl"></i>
-				</div>
-				<h3 class="font-bold text-gray-800 text-lg">Kelola Database</h3>
-				<p class="text-xs text-gray-500 mt-2">Pilih tindakan yang ingin Anda lakukan pada database aplikasi saat ini.</p>
-			</div>
-			
-			<div class="space-y-3">
-				<button onclick="hapusSemuaData()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-xs uppercase shadow-md active:scale-95 transition-all">
-					HAPUS SEMUA DATA (RESET)
-				</button>
-				<button onclick="tutupModalKelola()" class="w-full bg-gray-100 text-gray-600 py-3 rounded-xl font-bold text-xs uppercase active:scale-95 transition-all">
-					BATAL
-				</button>
-			</div>
-		</div>
-</div>
-
-
-
-
 	<style>
-		@keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-			.animate-slide-up { animation: slide-up 0.3s ease-out; }
-		
-		
-		/* Animasi Masuk (Sudah ada di v1.15) */
-		.animate-scale-in {
-			animation: scaleIn 0.2s ease-out forwards;
-		}
-
-		/* Animasi Keluar */
-		.animate-scale-out {
-			animation: scaleOut 0.2s ease-in forwards;
-		}
-
+		/* Animasi Masuk */
 		@keyframes scaleIn {
 			from { transform: scale(0.95); opacity: 0; }
 			to { transform: scale(1); opacity: 1; }
 		}
 
+		/* Animasi Keluar */
 		@keyframes scaleOut {
 			from { transform: scale(1); opacity: 1; }
 			to { transform: scale(0.95); opacity: 0; }
-		}	
+		}
+
+		/* Class untuk dipanggil di JavaScript */
+		.animate-scale-in {
+			animation: scaleIn 0.2s ease-out forwards;
+		}
+
+		.animate-scale-out {
+			animation: scaleOut 0.2s ease-in forwards;
+		}
+		
+		/* Animasi Modal/Panel Slide Up */
+		@keyframes slide-up { 
+			from { transform: translateY(100%); } 
+			to { transform: translateY(0); } 
+		}
+		.animate-slide-up { animation: slide-up 0.3s ease-out; }
 	</style>
 	
 </body>
